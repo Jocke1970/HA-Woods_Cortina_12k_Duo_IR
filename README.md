@@ -20,7 +20,7 @@ The IR protocol encoder is adapted from [srednak/woods-protocol](https://github.
 
 1. First configure the RM4 Mini with Home Assistant's official [BroadLink integration](https://www.home-assistant.io/integrations/broadlink/). Verify that a `remote.***` entity exists.
 2. In **HACS**, open the three-dot menu → **Custom repositories**. Add `https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR` as category **Integration**.
-3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `2026.10.0b3`. Do **not** install the default `main` branch or use `dev`.
+3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `2026.10.0b4`. Do **not** install the default `main` branch or use `dev`.
 4. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and search for **Wood's Cortina IR**.
 5. Choose BroadLink `remote.rm4_mini` and optionally a room-temperature sensor.
 6. Begin with a **supervised** IR test (Cool / 22°C / Low fan). Compare the result with the original remote. Do not enable automations until the signal is validated.
@@ -37,6 +37,8 @@ There is no need for the upstream ESPHome firmware. Install **only GitHub beta r
 - Bundled JS card with temperature +/- (COOL only), operating modes, power, fan, swing, and Energy Saver controls. Resource registration is manual; no separate JavaScript file copy or second HACS repository.
 
 ## Dashboard card
+
+The card now includes a separate smartplug mains-power button and live power / daily and monthly energy readings. The smartplug uses `switch.woods_cortina_silent_12k_duo` and sensors `sensor.woods_cortina_silent_12k_duo_power`, `sensor.woods_cortina_silent_12k_duo_energy_daily` and `sensor.woods_cortina_silent_12k_duo_energy_monthly` by default. You can override them as card properties. Mains off requires two taps and **must not be used to interrupt a running compressor**.
 
 The JavaScript card is shipped inside the HACS integration and exposed at `/woods_cortina/woods-cortina-card.js`. Add this URL once in dashboard resources (type **JavaScript module**), then add a **Manual** card:
 
@@ -60,8 +62,8 @@ Use the same permanent Lovelace resource URL across all releases—do **not** ad
 ## Versioning (from next release)
 
 Use calendar-based versions: `YYYY.MM.0bN`, with a numeric beta counter.
-For example, the **current** beta in October 2026 is `2026.10.0b3`
-(GitHub tag `v2026.10.0b3`), and the next would be `2026.10.0b4`.
+For example, the **current** beta in October 2026 is `2026.10.0b4`
+(GitHub tag `v2026.10.0b4`), and the next would be `2026.10.0b5`.
 For the first beta in a new month, restart from `b1`, e.g.
 `2026.11.0b1`. Keep the `0` patch component and two-digit month.
 

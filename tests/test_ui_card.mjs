@@ -60,6 +60,16 @@ function createCard(state = 'cool', temperature = 22, attrs = {}) {
   card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', name: 'Test AC <demo>' });
   card.hass = {
     states: {
+      'switch.woods_cortina_silent_12k_duo': { state: 'on', attributes: {} },
+      'sensor.woods_cortina_silent_12k_duo_power': {
+        state: '765.4', attributes: { unit_of_measurement: 'W' },
+      },
+      'sensor.woods_cortina_silent_12k_duo_energy_daily': {
+        state: '1.25', attributes: { unit_of_measurement: 'kWh' },
+      },
+      'sensor.woods_cortina_silent_12k_duo_energy_monthly': {
+        state: '18.35', attributes: { unit_of_measurement: 'kWh' },
+      },
       'climate.wood_s_cortina_12k_duo': {
         state,
         attributes: {
@@ -190,5 +200,104 @@ test('responsive styles use card container size, not browser window width', () =
   assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.ok(source.includes('2026.10.0b3'));
+  assert.ok(source.includes('2026.10.0b4'));
+});
+
+
+test('power and energy entities are exposed in the default card config', () => {
+  const cfg = Card.getStubConfig();
+  assert.equal(cfg.power_entity, 'switch.woods_cortina_silent_12k_duo');
+  assert.equal(cfg.power_sensor, 'sensor.woods_cortina_silent_12k_duo_power');
+  assert.equal(cfg.energy_daily, 'sensor.woods_cortina_silent_12k_duo_energy_daily');
+  assert.equal(cfg.energy_monthly, 'sensor.woods_cortina_silent_12k_duo_energy_monthly');
+  const { card } = createCard();
+  assert.ok(card.shadowRoot.innerHTML.includes('765,4 W'));
+  assert.ok(card.shadowRoot.innerHTML.includes('1,25 kWh'));
+  assert.ok(card.shadowRoot.innerHTML.includes('18,35 kWh'));
+  assert.ok(card.shadowRoot.innerHTML.includes('Strömförsörjning'));
+  assert.ok(card.shadowRoot.innerHTML.includes('Stoppa AC via IR'));
+});
+
+test('sensor unavailable or missing displays dash instead of fake consumption', () => {
+  const { card } = createCard();
+  delete card._hass.states['sensor.woods_cortina_silent_12k_duo_power'];
+  card._hass.states['sensor.woods_cortina_silent_12k_duo_energy_daily'].state = 'unavailable';
+  card._hass.states['sensor.woods_cortina_silent_12k_duo_energy_monthly'].state = '0';
+  card._render();
+  assert.ok(card.shadowRoot.innerHTML.includes('Aktuell effekt'));
+  assert.ok(card.shadowRoot.innerHTML.includes('—'));
+  assert.ok(card.shadowRoot.innerHTML.includes('0 kWh'));
+  assert.ok(!card.shadowRoot.innerHTML.includes('NaN'));
+});
+
+test('smartplug on requires two separate clicks to turn off; never sends IR', async () => {
+  const { card, calls } = createCard();
+  const clickMains = () => card._handleClick(click('mains'));
+  await clickMains();
+  assert.equal(calls.length, 0);
+  assert.equal(card._confirmMainsOff, true);
+  assert.ok(card.shadowRoot.innerHTML.includes('Bekräfta av'));
+  await clickMains();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'switch');
+  assert.equal(calls[0][1], 'turn_off');
+  assert.equal(calls[0][2].entity_id, 'switch.woods_cortina_silent_12k_duo');
+  assert.equal(card._confirmMainsOff, false);
+  assert.ok(card.shadowRoot.innerHTML.includes('Strömkommando skickat'));
+});
+
+test('smartplug off turns on with a single switch service call, never IR', async () => {
+  const { card, calls } = createCard();
+  card._hass.states['switch.woods_cortina_silent_12k_duo'].state = 'off';
+  card._render();
+  await card._handleClick(click('mains'));
+  assert.deepEqual(calls.map(x => x.slice(0, 2)), [['switch', 'turn_on']]);
+  assert.equal(calls[0][2].entity_id, 'switch.woods_cortina_silent_12k_duo');
+});
+
+test('IR is disabled while mains off, but user may turn plug on', async () => {
+  const { card, calls } = createCard();
+  card._hass.states['switch.woods_cortina_silent_12k_duo'].state = 'off';
+  card._render();
+  const powerIR = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find(b => b.dataset.action === 'power');
+  assert.equal(powerIR.disabled, true);
+  await card._handleClick(click('power'));
+  await card._handleClick(click('temp', '1'));
+  assert.equal(calls.length, 0);
+  assert.ok(card.shadowRoot.innerHTML.includes('Smartpluggen är avstängd'));
+});
+
+test('unavailable mains switch disables switch control but keeps climate independent', async () => {
+  const { card, calls } = createCard();
+  card._hass.states['switch.woods_cortina_silent_12k_duo'].state = 'unavailable';
+  card._render();
+  const button = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find(b => b.dataset.action === 'mains');
+  assert.equal(button.disabled, true);
+  await card._handleClick(click('mains'));
+  assert.equal(calls.length, 0);
+  await card._handleClick(click('temp', '1'));
+  assert.equal(calls[0][0], 'climate');
+});
+
+test('mains confirmation cancels when operating another AC command', async () => {
+  const { card, calls } = createCard();
+  await card._handleClick(click('mains'));
+  assert.equal(card._confirmMainsOff, true);
+  await card._handleClick(click('temp', '1'));
+  assert.equal(card._confirmMainsOff, false);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'climate');
+});
+
+test('sensor and switch entity customisation validates domain', () => {
+  const card = new Card();
+  assert.throws(() => card.setConfig({
+    entity: 'climate.wood_s_cortina_12k_duo', power_entity: 'sensor.no',
+  }));
+  card.setConfig({
+    entity: 'climate.wood_s_cortina_12k_duo', power_entity: 'switch.other_plug',
+  });
+  assert.equal(card._config.power_entity, 'switch.other_plug');
 });
