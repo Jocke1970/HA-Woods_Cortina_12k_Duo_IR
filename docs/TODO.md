@@ -34,8 +34,9 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 ## P1 — Better user experience (after core modes work)
 
-- [ ] Premium Lovelace JavaScript card for the climate entity.
-- [ ] Hide/disable setpoint control in FAN and DRY; preserve COOL setpoint.
+- [x] Premium Lovelace JavaScript card bundled with the integration; released for initial UI testing in `v0.1.0b2`.
+- [x] Hide/disable setpoint control in FAN and DRY **in the custom card**; retain the displayed last COOL target.
+- [ ] Review backend `climate.set_temperature` behavior in FAN/DRY separately; the generic HA thermostat and direct service calls still accept changes while those modes are active.
 - [ ] Consider optional external-temperature-aware *supervised* control.
   IR provides no actual appliance-state feedback, so plan failure/restart
   and anti-short-cycle handling before enabling automation.
@@ -57,7 +58,7 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 - IR is one-way. `requested_power`, target, and mode are assumed last
   requests, not appliance feedback.
-- The current HACS beta remains `v0.1.0b1`, without HEAT enabled.
+- The HACS beta `v0.1.0b2` adds the bundled Lovelace card, without HEAT enabled.
 - Keep any speculative HEAT and Auto Clean experimentation on `dev`
   until hardware-backed tests pass.
 
