@@ -21,9 +21,9 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
   during all captures; avoid rapid compressor cycling.
 - [ ] Confirm HEAT at another fan speed and/or setpoint, preferably including
   a fresh transition showing HEAT on the original remote's LCD.
-- [ ] Implement validated HEAT encoding and `HVACMode.HEAT` in `dev`,
-  adding capture-based tests; isolate the ambiguous B7 `0x04` flag rather
-  than calling it Auto Clean without independent validation.
+- [x] Implement captured HEAT state/power encoding, `HVACMode.HEAT`,
+  HA climate restore of mode=-1, and radiator mode button in `dev`,
+  with regression tests. B7 bit `0x04` remains ambiguous; no Auto Clean UI.
 - [ ] Supervised physical tests: HEAT command acceptance, setpoint changes,
   fan behavior, power transitions, and safe switching between COOL and HEAT.
 - [ ] Retain last COOL target when switching through FAN/DRY; do not send
@@ -70,7 +70,7 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 - IR is one-way. `requested_power`, target, and mode are assumed last
   requests, not appliance feedback.
-- The HACS beta `2026.10.0b5` adds the bundled Lovelace card, without HEAT enabled.
+- The latest released HACS beta is `2026.10.0b5`. HEAT exists only in the **unreleased dev candidate** `2026.10.0b6`, pending real RM4 testing.
 - Keep any speculative HEAT and Auto Clean experimentation on `dev`
   until hardware-backed tests pass.
 

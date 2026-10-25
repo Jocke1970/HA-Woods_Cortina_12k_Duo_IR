@@ -1,34 +1,23 @@
-# Wood's Cortina 12K Duo IR — 2026.10.0b5 (beta)
+# Draft beta notes — 2026.10.0b6 (UNRELEASED)
 
-## UI redesign
+Prepared on `dev` only. **Do not publish via HACS until the user
+confirms actual HEAT power OFF/ON replay via RM4 Mini.**
 
-- Moves mode buttons **into the top hero**, with visually distinct
-  MDI snowflake / water-percent / fan icons.
-- A single **primary power** button has contextual behavior:
-  - smartplug OFF → `switch.turn_on`, **without** AC IR startup;
-  - smartplug ON → `climate.turn_on` or `climate.turn_off`.
-- A small **Bryt huvudström** action is available only while the climate
-  entity reports OFF. It is never displayed while climate reports ON.
-  Before switch-off, the UI requires measured draw ≤15 W (a valid W/kW
-  reading), ≥60 s since the last IR request, and two clicks within 15 s.
-- **Fler inställningar** expander appears first.
-- **Strömförbrukning** expander follows, containing live W and daily and
-  monthly kWh metrics plus smartplug supply state.
-- Existing entity IDs and card YAML are unchanged.
+- Adds HEAT to the climate mode list and the custom card (radiator icon).
+- Captured 22°C and 23°C HEAT states and separate 22°C HEAT POWER ON/OFF
+  frames are reproduced byte-for-byte by the production encoder.
+- Restores optimistic HEAT selection after HA restart, subject to the
+  same no-IR-feedback caveats as other modes.
+- Preserves COOL/DRY/FAN protocol behavior.
+- The B7 `0x04` bit present in ordinary HEAT state captures is
+  still unidentified. Auto Clean, timer and Sleep remain deferred.
+- No changes to smartplug/energy entities, safeguards or resource URL.
 
-## Safety caveats
+The original remote used separate ON and OFF payloads, but this is not
+proof that sending them via RM4 will start/stop the AC, nor that replaying
+them repeatedly is always safe with stale HA state. **No unattended
+heating, frost protection, or automated compressor cycling** until
+verified on hardware.
 
-Home Assistant tracks IR commands optimistically. Even the new
-power guard cannot confirm that the physical compressor has stopped
-if another remote was used or power readings are stale. The user must
-visually verify the AC is off before disconnecting its mains supply.
-This beta has no automatic switching between mains and AC control.
-
-## Deployment
-
-Upgrade through HACS to prerelease `v2026.10.0b5` and restart HA.
-Keep the existing Lovelace resource URL exactly
-`/woods_cortina/woods-cortina-card.js` (no `?v=` suffix).
-Reload the dashboard; do not install from `dev`.
-
-HEAT, AUTO CLEAN, timers and sleep remain unavailable.
+Install via HACS only after a tagged beta is published. Keep JavaScript
+resource URL `/woods_cortina/woods-cortina-card.js` unchanged.

@@ -309,3 +309,63 @@ functions are explicitly postponed to the backlog, along with Sleep and
 other nonessential extras.
 
 See `docs/TODO.md`.
+
+
+## Captured HEAT power verification (25 October 2026)
+
+Both new power captures decode as exact 72-bit original Wood's frames:
+
+| Recorded action | Original-remote frame |
+|---|---|
+| HEAT POWER OFF, 22 °C, LOW | `55 60 00 0D 00 00 10 88 5A` |
+| HEAT POWER ON, 22 °C, LOW | `55 62 00 0D 00 00 10 88 5C` |
+| HEAT state change, 22 °C, LOW | `55 62 00 0D 00 00 10 84 58` |
+| HEAT state change, 23 °C, LOW | `55 72 00 0E 00 00 10 84 69` |
+
+The `dev` encoder now reproduces **all four frames byte-for-byte**.
+The POWER OFF/ON difference is B1 `0x60`→`0x62` and B8
+`0x5A`→`0x5C`; B7 is `0x88` in both. A normal HEAT state frame
+instead has B7=`0x84`, including bit `0x04`. That bit is still
+semantically ambiguous (upstream names it Auto Clean) and is not
+presented as an independent Auto Clean action.
+
+### Required physical RM4 replay before beta
+
+Keep smartplug mains **ON** throughout, supervise the AC and respect
+compressor restart delays. No direct `dev` installation is needed.
+
+When the physical AC is running in **HEAT 22°C/LOW**, open
+**Developer Tools → Actions** in Home Assistant:
+
+```yaml
+action: remote.send_command
+target:
+  entity_id: remote.rm4_mini
+data:
+  device: woods_heat_research
+  command: heat_power_off
+```
+
+Confirm the *physical* appliance has switched OFF. Do not confuse HA's
+last requested climate state with actual AC feedback.
+
+After the AC has finished shutting down and sufficient time has
+elapsed for a safe restart, send:
+
+```yaml
+action: remote.send_command
+target:
+  entity_id: remote.rm4_mini
+data:
+  device: woods_heat_research
+  command: heat_power_on
+```
+
+Confirm physical ON and HEAT on its display; compressor/heater output
+may be delayed by appliance protection. Report whether **both** actions
+were accepted. If either fails, don't use unattended HEAT automation;
+capture a second original-remote sample and investigate power semantics.
+
+A successful decode or green GitHub CI alone is **not** physical
+confirmation. Publish `2026.10.0b6` to HACS only after the physical
+RM4 test passes; follow `dev → beta → main`.

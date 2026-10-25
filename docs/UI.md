@@ -144,3 +144,14 @@ and has **no version parameter**.
 
 If the dashboard shows `Custom element doesn't exist`, confirm the
 resource URL returns JavaScript after HA restart and refresh the browser.
+
+
+## Upcoming HEAT control (dev only, prerelease blocked)
+
+The unreleased `2026.10.0b6` candidate adds the `mdi:radiator` HEAT
+mode in the hero. With physical HEAT selected, temperature +/- controls
+are active. The four modes occupy a responsive 2x2 grid in narrow cards
+and four columns in wider cards. Energy Saver stays COOL-only.
+
+This feature is **not installed in the current b5 HACS beta**. It must
+first pass supervised RM4 power replay and appliance validation.
