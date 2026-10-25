@@ -4,9 +4,10 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0b5";
+  const VERSION = "2026.10.0b6";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
+    { value: "heat", label: "Värme", icon: "mdi:radiator" },
     { value: "dry", label: "Avfuktning", icon: "mdi:water-percent" },
     { value: "fan_only", label: "Fläkt", icon: "mdi:fan" },
   ];
@@ -51,6 +52,7 @@
     .shell{padding:clamp(10px,4cqi,20px);width:100%;min-width:0}
     .hero{position:relative;overflow:hidden;isolation:isolate;border-radius:16px;padding:clamp(13px,4.5cqi,20px);background:linear-gradient(130deg,#102a3d 0%,#103d5b 53%,#153f59 100%);color:#f7fcff}
     .hero:before{content:"";position:absolute;top:-85px;right:-78px;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(75,198,255,.24),transparent 68%);pointer-events:none;z-index:-1}
+    .hero[data-mode="heat"]{background:linear-gradient(130deg,#542b20,#88441e)}
     .hero[data-mode="dry"]{background:linear-gradient(130deg,#173445,#195665)}
     .hero[data-mode="fan_only"]{background:linear-gradient(130deg,#213c42,#245962)}
     .hero[data-mode="off"]{background:linear-gradient(130deg,#333d48,#424950)}
@@ -79,11 +81,12 @@
     .hint{font-size:11px;color:var(--secondary-text-color,#8d9da7);margin-top:10px;line-height:1.45}
     .hero-controls{position:relative;z-index:1;margin-top:19px;padding-top:15px;border-top:1px solid rgba(255,255,255,.19)}
     .hero-label{font-size:10px;letter-spacing:.12em;font-weight:700;color:#b9d7e8;margin-bottom:9px}
-    .hero-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+    .hero-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
     .mode{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-width:0;min-height:74px;padding:9px 3px;border-radius:11px;border:1px solid rgba(188,224,240,.25);background:rgba(255,255,255,.07);color:#d6e9f4;font-size:clamp(10px,3.2cqi,12px);font-weight:650;overflow-wrap:anywhere}
     .mode span{max-width:100%;text-align:center}
     .mode ha-icon{--mdc-icon-size:23px;color:#b6d4e6}
     .mode[data-value="cool"] ha-icon{color:#82d8ff}
+    .mode[data-value="heat"] ha-icon{color:#ffb274}
     .mode[data-value="dry"] ha-icon{color:#6cdddf}
     .mode[data-value="fan_only"] ha-icon{color:#c1dbff}
     .mode.active{background:rgba(69,186,237,.23);border-color:#74d2ff;box-shadow:inset 0 0 0 1px rgba(100,211,255,.2);color:#fff}
@@ -129,6 +132,7 @@
       .bottom{flex-direction:row;justify-content:space-between}
       .bottom .stamp{justify-content:flex-end}
       .mode{min-height:81px}
+      .hero-modes{grid-template-columns:repeat(4,minmax(0,1fr))}
     }
     @container (max-width:210px){
       .setpoint-value{font-size:42px}
@@ -228,7 +232,8 @@
       const physicalWatts = wattsReading(this._hass.states[this._config.power_sensor]);
       const on = this._isActiveMode(entity);
       const cooling = on && entity.state === "cool";
-      const adjustable = cooling && !this._busy && !mainsOff;
+      const heating = on && entity.state === "heat";
+      const adjustable = (cooling || heating) && !this._busy && !mainsOff;
       const value = Number(attr.temperature);
       const target = Number.isFinite(value) ? value : 22;
       const room = attr.current_temperature == null ? "—" : fmt(attr.current_temperature) + " °C";
@@ -264,10 +269,10 @@
         ? lastSent.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : "Aldrig";
       const heroMode = mainsOff ? "off" : on ? entity.state : "off";
       const statusText = mainsOff ? "Ström av" : !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
-        entity.state === "dry" ? "Avfuktning" : "Fläkt";
+        entity.state === "heat" ? "Värme aktiv" : entity.state === "dry" ? "Avfuktning" : "Fläkt";
       const disabledText = entity.state === "fan_only" || entity.state === "dry"
         ? "Temperaturinställning används inte i detta driftläge."
-        : !on ? "Slå på kyla för att ändra temperaturen." : "Temperaturen regleras av AC:ns egen termostat.";
+        : !on ? "Starta kyla eller värme för att ändra temperaturen." : "Temperaturen regleras av AC:ns egen termostat.";
       this.shadowRoot.innerHTML = `
         <style>${CSS}</style>
         <ha-card>
@@ -280,8 +285,8 @@
               </div>
               <div class="hero-main">
                 <div>
-                  <div class="setpoint-caption">${cooling ? "BÖRTEMPERATUR" : "SENASTE KYLBÖRVÄRDE"}</div>
-                  <div class="setpoint-row ${cooling ? "" : "dim"}">
+                  <div class="setpoint-caption">${cooling || heating ? "BÖRTEMPERATUR" : "SENASTE BÖRVÄRDE"}</div>
+                  <div class="setpoint-row ${cooling || heating ? "" : "dim"}">
                     <span class="setpoint-value">${fmt(target)}</span><span class="setpoint-unit">°C</span>
                   </div>
                 </div>
@@ -320,7 +325,7 @@
                 </div>
               </div>
             </div>
-            ${!cooling ? `<div class="hint">${htmlEscape(disabledText)}</div>` : ""}
+            ${!(cooling || heating) ? `<div class="hint">${htmlEscape(disabledText)}</div>` : ""}
             <details class="panel" data-panel="settings" ${this._advanced ? "open" : ""}>
               <summary>Fler inställningar</summary>
               <div class="advanced">
@@ -335,7 +340,7 @@
                     data-value="${saver ? "none" : "energy_saver"}" aria-pressed="${saver}"
                     ${!cooling || this._busy || mainsOff ? "disabled" : ""}>${saver ? "Avaktivera" : "Aktivera"} Energy Saver</button>
                 </div>
-                <div class="fineprint">HEAT, Auto Clean och timer är ännu inte aktiverade.
+                <div class="fineprint">HEAT är experimentellt och väntar på fysisk testning via RM4 Mini. Auto Clean och timer finns på TODO.
                   IR-kommandon är enkelriktade; kortet visar senast begärt tillstånd.</div>
               </div>
             </details>
@@ -445,7 +450,7 @@
         if (value === entity.state) return;
         service = "set_hvac_mode";
         data = { hvac_mode: value };
-      } else if (action === "temp" && entity.state === "cool") {
+      } else if (action === "temp" && ["cool", "heat"].includes(entity.state)) {
         const step = Number(value);
         const t = Number(attr.temperature);
         const next = t + step;

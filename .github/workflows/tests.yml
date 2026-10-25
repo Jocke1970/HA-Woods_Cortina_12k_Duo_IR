@@ -37,7 +37,7 @@ jobs:
           assert hacs["hide_default_branch"] is True
           assert manifest["domain"] == "woods_cortina"
           assert manifest["config_flow"] is True
-          assert manifest["version"] == "2026.10.0b5"
+          assert manifest["version"] == "2026.10.0b6"
           assert "http" in manifest["dependencies"]
           assert Path("custom_components/woods_cortina/www/woods-cortina-card.js").is_file()
           assert Path("custom_components/woods_cortina/climate.py").is_file()
