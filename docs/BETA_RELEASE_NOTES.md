@@ -1,47 +1,34 @@
-# Wood's Cortina 12K Duo IR — 2026.10.0b4 (beta)
+# Wood's Cortina 12K Duo IR — 2026.10.0b5 (beta)
 
-## New smartplug power and energy section
+## UI redesign
 
-- Adds **Strömförsörjning** for the existing smartplug
-  `switch.woods_cortina_silent_12k_duo`, distinct from the existing
-  climate IR start/stop control.
-- Shows actual consumption from
-  `sensor.woods_cortina_silent_12k_duo_power`,
-  `sensor.woods_cortina_silent_12k_duo_energy_daily`, and
-  `sensor.woods_cortina_silent_12k_duo_energy_monthly`.
-- Uses each sensor's HA-reported measurement unit; displays `—` for
-  missing or unavailable data.
-- Smartplug ON uses `switch.turn_on`; OFF requires a second confirmation
-  click and uses `switch.turn_off`. Never automatically chains IR and
-  smartplug calls. IR controls are disabled when the plug is explicitly off.
-- Four optional card configuration keys are available with the user's
-  provided entity IDs preconfigured as defaults. Existing dashboard
-  YAML need not change.
-- Additional frontend tests cover sensor formatting, missing entities,
-  smartplug clicks and separation of IR from mains controls.
+- Moves mode buttons **into the top hero**, with visually distinct
+  MDI snowflake / water-percent / fan icons.
+- A single **primary power** button has contextual behavior:
+  - smartplug OFF → `switch.turn_on`, **without** AC IR startup;
+  - smartplug ON → `climate.turn_on` or `climate.turn_off`.
+- A small **Bryt huvudström** action is available only while the climate
+  entity reports OFF. It is never displayed while climate reports ON.
+  Before switch-off, the UI requires measured draw ≤15 W (a valid W/kW
+  reading), ≥60 s since the last IR request, and two clicks within 15 s.
+- **Fler inställningar** expander appears first.
+- **Strömförbrukning** expander follows, containing live W and daily and
+  monthly kWh metrics plus smartplug supply state.
+- Existing entity IDs and card YAML are unchanged.
 
-## Important safety considerations
+## Safety caveats
 
-**Do not interrupt mains while the AC compressor is operating.**
-Stop the AC with its native control first; wait for its shutdown sequence
-to finish. The two-click guard does not detect whether the compressor
-is actually running. HA climate state remains optimistic because
-the RM4 communicates by one-way IR.
+Home Assistant tracks IR commands optimistically. Even the new
+power guard cannot confirm that the physical compressor has stopped
+if another remote was used or power readings are stale. The user must
+visually verify the AC is off before disconnecting its mains supply.
+This beta has no automatic switching between mains and AC control.
 
-The previous power/IR synchronization concern is **not** automatically
-resolved by this UI update. Continue physical supervision.
+## Deployment
 
-## Installation
+Upgrade through HACS to prerelease `v2026.10.0b5` and restart HA.
+Keep the existing Lovelace resource URL exactly
+`/woods_cortina/woods-cortina-card.js` (no `?v=` suffix).
+Reload the dashboard; do not install from `dev`.
 
-Update the HACS custom repository to prerelease `v2026.10.0b4`,
-restart HA and reload the browser. Keep the one-time resource as
-`/woods_cortina/woods-cortina-card.js` — **no `?v=` suffix**.
-
-```yaml
-type: custom:woods-cortina-card
-entity: climate.wood_s_cortina_12k_duo
-name: Wood's Cortina
-```
-
-All existing IR backend behavior remains unchanged.
-HEAT, AUTO CLEAN, TIMER and SLEEP remain disabled or postponed.
+HEAT, AUTO CLEAN, timers and sleep remain unavailable.
