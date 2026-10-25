@@ -303,7 +303,7 @@
       const powerDescription = mainsOff ? "Slå på huvudström" : mainsOn ?
         (on ? "Stoppa AC via IR" : "Starta AC via IR") : "Huvudström okänd";
       const powerAreaLabel = mainsOff ? "Huvudström" : mainsOn ? "AC" : "Okänd";
-      const powerHint = mainsOn ? "Håll: huvudström" : "";
+      const powerHint = mainsOn && !on ? "Håll: huvudström" : "";
       const statusText = mainsOff ? "Ström av" : !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
         entity.state === "heat" ? "Värme aktiv" : entity.state === "dry" ? "Avfuktning" : "Fläkt";
       const disabledText = entity.state === "fan_only" || entity.state === "dry"
@@ -322,7 +322,7 @@
                 <div class="power-cluster">
                   <button type="button" class="power ${on && mainsOn ? "" : "off"}"
                     data-action="power" aria-label="${htmlEscape(powerDescription)}"
-                    title="${htmlEscape(powerDescription)}${mainsOn ? " · Håll 1 sekund för huvudström" : ""}"
+                    title="${htmlEscape(powerDescription)}${mainsOn && !on ? " · Håll 1 sekund för huvudström" : ""}"
                     ${this._busy || !mainsOnline ? "disabled" : ""}>
                     <ha-icon icon="mdi:power"></ha-icon>
                   </button>
