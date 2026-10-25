@@ -30,7 +30,7 @@ const context = {
               const listeners = new Map();
               return {
                 dataset: { action, value },
-                disabled: /(?:^| )disabled(?: |$)/.test(attrs),
+                disabled: /(?:^|\s)disabled(?:\s|$)/.test(attrs),
                 addEventListener: (eventName, callback) => listeners.set(eventName, callback),
                 click() {
                   const cb = listeners.get('click');
