@@ -143,3 +143,42 @@ all five mode transitions sequentially with their displayed mode labels.
 
 The Duo manual lists five modes including HEAT. No generated HEAT
 transmission is authorized by these captures.
+
+## Verified adjacent DRY → HEAT captures (25 October 2026)
+
+The original-remote mode button was captured in sequence, with the final
+modes labeled by the owner:
+
+| Button result | Raw nine bytes | Notes |
+|---|---|---|
+| Into DRY (`dry_mode`) | `55 82 00 10 00 00 12 84 7D` | B6 low nibble `2` = known DRY; frame has 24°C encoded |
+| Into HEAT (`heat_from_dry`) | `55 62 00 0D 00 00 10 84 58` | B6 low nibble `0`, previously unmapped; frame has 22°C encoded |
+
+These signals give **strong evidence that HEAT is mode=-1 with B6
+low nibble 0**, rather than the earlier speculative `0x15` / mode=4.
+They are **not** sufficient for an on-device generated-HEAT test yet,
+because a previously learned item named COOL 22 also had B6=`0x10`.
+We must capture the **real transition into COOL**, confirmed on
+the remote LCD, to disambiguate the label mismatch.
+
+Checksum consistency also supports this mapping:
+- COOL baseline at 24°C = `0x78`; DRY `+1` and B7 bit2 `+4` → `0x7D`.
+- COOL baseline at 22°C = `0x55`; candidate HEAT `-1` and B7 bit2
+  `+4` → `0x58`.
+- COOL baseline at 23°C = `0x66`; candidate HEAT `-1` and B7 bit2
+  `+4` → `0x69` (earlier HEAT 23°C capture).
+
+The temperature field changed from 24°C to 22°C when transitioning
+DRY → HEAT. It may be mode-specific setpoint memory or a different remote
+behavior; avoid assuming the stored target persists across mode changes.
+B7 bit2 (upstream called auto-clean) was ON in both new frames, so it
+is not sufficient to distinguish the modes.
+
+**Next capture:** on original remote, navigate to the mode immediately
+preceding COOL; use `remote.learn_command` on `remote.rm4_mini` with
+device `woods_heat_research`, command `cool_mode_verified`. Press
+MODE **one time** and inspect the LCD: it must show COOL. Decode and
+compare this frame to the DRY and HEAT frames above.
+
+The climate entity **must not offer or send HEAT until its generated
+frames and power-on/power-off transitions have been hardware-validated**.
