@@ -104,7 +104,7 @@ test('registers the Lovelace card only once and protects config names', () => {
   const { card } = createCard();
   assert.ok(card.shadowRoot.innerHTML.includes('Test AC &lt;demo&gt;'));
   assert.ok(!card.shadowRoot.innerHTML.includes('Test AC <demo>'));
-  assert.ok(card.shadowRoot.innerHTML.includes('RUMSTEMPERATUR'));
+  assert.ok(card.shadowRoot.innerHTML.includes('title="Rumstemperatur"'));
   assert.throws(() => (new Card()).setConfig({ entity: 'sensor.not_climate' }));
 });
 
@@ -364,7 +364,7 @@ test('unavailable mains switch disables main power but not other IR controls', a
 });
 
 test('panel sequence and mode icons live inside hero; energy is second expander', () => {
-  const { card } = stoppedCard();
+  const { card } = createCard('cool');
   const h = card.shadowRoot.innerHTML;
   const hero = h.indexOf('class="hero"');
   const mode = h.indexOf('class="hero-modes"');
@@ -487,7 +487,7 @@ test('header contains exactly one mdi:power button in the upper right corner', (
     assert.ok(headerEnd > html.indexOf('class="power-cluster"'));
     assert.ok(html.indexOf('data-action="power"') < html.indexOf('class="hero-main"'));
     assert.ok(button[0].includes('icon="mdi:power"'));
-    assert.ok(button[0].includes('title="' + expectedTitle + '"'));
+    assert.ok(button[0].includes('title="' + expectedTitle));
     assert.ok(button[0].includes('aria-label="' + expectedTitle + '"'));
     assert.ok(html.includes('<span class="power-hint">' + expectedHint + '</span>'));
     if (mainsState === 'unavailable') assert.ok(button[0].includes('disabled'));
