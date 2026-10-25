@@ -14,9 +14,11 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 - [x] Candidate HEAT frame found from real HEAT transition at 22°C:
   `55 62 00 0D 00 00 10 84 58`; at 23°C:
   `55 72 00 0E 00 00 10 84 69`.
-- [ ] Verify HEAT power ON and power OFF frames using *original remote*
-  captures; ensure no accidental power toggle if HA's optimistic state
-  differs from the real AC.
+- [ ] **Next capture:** learn `heat_power_off` then `heat_power_on` with
+  the original remote in HEAT 22°C/LOW; compare real receiver frames in
+  `docs/HEAT_CAPTURE.md`. Verify both physical transitions and identify
+  toggle semantics before enabling HA HEAT. Keep smartplug mains ON
+  during all captures; avoid rapid compressor cycling.
 - [ ] Confirm HEAT at another fan speed and/or setpoint, preferably including
   a fresh transition showing HEAT on the original remote's LCD.
 - [ ] Implement validated HEAT encoding and `HVACMode.HEAT` in `dev`,
