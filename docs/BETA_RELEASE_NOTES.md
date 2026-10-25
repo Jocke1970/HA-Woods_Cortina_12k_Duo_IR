@@ -1,37 +1,39 @@
-# Wood's Cortina 12K Duo IR — v0.1.0b2 (beta)
+# Wood's Cortina IR — 2026.10.0b3 (beta)
 
-## New in this beta
+First CalVer beta using the required `YYYY.MM.0bN` format.
 
-- **Premium Lovelace JS card**, bundled directly with the HACS custom
-  integration at `/woods_cortina/woods-cortina-card.js`.
-- Responsive Swedish UI: current temperature, COOL setpoint (+/−),
-  COOL/DRY/FAN mode selectors, on/off, fan speeds, swing,
-  Energy Saver, collapsible advanced settings, clear optimistic-IR notice.
-- COOL-only setpoint controls in the new card; FAN and DRY intentionally
-  show the last target without offering adjustments.
-- Home Assistant static resource registration for the bundled card.
-  **One-time Lovelace resource setup is still required** (see
-  [UI guide](docs/UI.md) and [README](README.md)).
-- Actual BroadLink RM4 original-remote recordings preserved and tested:
-  verified COOL, DRY, candidate HEAT and ambiguous AUTO CLEAN.
-- Codec and frontend smoke checks in GitHub CI.
+## Changes from v0.1.0b2
 
-## Still experimental
+- **Narrow-card layout fix:** responsive container-based layout prevents
+  temperature buttons from being clipped; status and title no longer
+  collide. Room temperature and footer are easier to read.
+- **Interaction hardening:** direct event listeners on each rendered
+  button, visible *sending* and HA *accepted* feedback, and visible
+  service-call errors. Adds JS interaction tests using the actual
+  bound button handlers instead of only invoking private methods.
+- Compact footer shows the time of the last requested IR transmission
+  and exposes the full timestamp as a tooltip.
+- Frontend cache-busting resource URL documented.
+- Updated backend/JS/display/manifest version `2026.10.0b3`.
+- IR codec and climate backend behavior unchanged from b2.
+  HEAT, Auto Clean, timer, and Sleep remain unavailable.
 
-- The verified path is HA → generated COOL IR → RM4 Mini → Wood's Duo AC.
-  Other function combinations and power transitions require user testing.
-- **HEAT remains disabled.** Although the mode byte appears to be 0x10,
-  safe power-on/off transitions and generation need real-hardware validation.
-- AUTO CLEAN, timer, and sleep are on the TODO list.
-- No automated temperature compensation; no AC state feedback.
-- Do not use for unattended frost protection or heating.
+**Important:** No physical RM4 transmission or confirmed appliance
+status is implied by a successful HA service call. Test manually in
+a **normal (not editing) dashboard view**.
 
-## HACS upgrade
+## Upgrade via HACS
 
-Upgrade the already-added HACS custom repository to prerelease
-**`v0.1.0b2`**, restart HA, then register dashboard resource
-`/woods_cortina/woods-cortina-card.js` (type **JavaScript module**) and
-use this card:
+Download beta prerelease `v2026.10.0b3` in the HACS custom
+repository, restart Home Assistant, then **edit the existing dashboard
+JavaScript module resource** to:
+
+```
+/woods_cortina/woods-cortina-card.js?v=2026.10.0b3
+```
+
+Hard-refresh the browser (Ctrl+Shift+R). No need to add a second
+resource or copy frontend files.
 
 ```yaml
 type: custom:woods-cortina-card
@@ -39,5 +41,5 @@ entity: climate.wood_s_cortina_12k_duo
 name: Wood's Cortina
 ```
 
-This beta continues to target HA 2026.10 and uses the user's existing
-BroadLink `remote.rm4_mini` integration. `main` stays untouched.
+Please verify COOL temperature +/−, mode switching and power
+and observe last_ir_sent_at in the HA climate entity.

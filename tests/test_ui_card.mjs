@@ -10,10 +10,37 @@ const events = [];
 const context = {
   HTMLElement: class {
     attachShadow() {
-      this.shadowRoot = {
-        innerHTML: '',
+      const shadowRoot = {
+        _html: '',
+        _buttons: [],
         addEventListener: (name, callback) => events.push([name, callback]),
+        querySelectorAll: (selector) => selector === 'button[data-action]'
+          ? shadowRoot._buttons : [],
       };
+      Object.defineProperty(shadowRoot, 'innerHTML', {
+        get() { return this._html; },
+        set(markup) {
+          this._html = markup;
+          this._buttons = [...markup.matchAll(/<button\\b([^>]+)>/g)]
+            .filter((match) => match[1].includes('data-action='))
+            .map((match) => {
+              const attrs = match[1];
+              const action = attrs.match(/data-action="([^"]+)"/)?.[1];
+              const value = attrs.match(/data-value="([^"]+)"/)?.[1] || '';
+              const listeners = new Map();
+              return {
+                dataset: { action, value },
+                disabled: /(?:^|\\s)disabled(?:\\s|$)/.test(attrs),
+                addEventListener: (eventName, callback) => listeners.set(eventName, callback),
+                click() {
+                  const cb = listeners.get('click');
+                  if (cb && !this.disabled) cb({ stopPropagation() {} });
+                },
+              };
+            });
+        },
+      });
+      this.shadowRoot = shadowRoot;
     }
   },
   customElements: {
@@ -114,4 +141,55 @@ test('service errors are reported inline and busy flag is reset', async () => {
   await card._handleClick(click('power'));
   assert.equal(card._busy, false);
   assert.ok(card.shadowRoot.innerHTML.includes('RM4 unavailable'));
+});
+
+
+test('actual rendered buttons have live click listeners and invoke climate', async () => {
+  const { card, calls } = createCard('cool', 22);
+  const plusButton = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find((button) => button.dataset.action === 'temp' && button.dataset.value === '1');
+  assert.ok(plusButton, 'temperature button is rendered');
+  assert.equal(plusButton.disabled, false);
+  plusButton.click();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][1], 'set_temperature');
+  assert.equal(calls[0][2].temperature, 23);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.ok(card.shadowRoot.innerHTML.includes('Kommandot accepterades'));
+  assert.equal(card._busy, false);
+});
+
+test('click handlers work on power, mode, fan and swing through rendered controls', () => {
+  const { card, calls } = createCard('cool', 22);
+  for (const [action, value, expected] of [
+    ['power', '', 'turn_off'],
+  ]) {
+    const button = card.shadowRoot.querySelectorAll('button[data-action]')
+      .find((item) => item.dataset.action === action && item.dataset.value === value);
+    assert.ok(button);
+    button.click();
+    assert.equal(calls.at(-1)?.[1], expected);
+  }
+});
+
+test('disabled setpoint buttons in DRY and FAN have no active click effect', () => {
+  for (const state of ['dry', 'fan_only']) {
+    const { card, calls } = createCard(state, 23);
+    const button = card.shadowRoot.querySelectorAll('button[data-action]')
+      .find((item) => item.dataset.action === 'temp');
+    assert.ok(button);
+    assert.equal(button.disabled, true);
+    button.click();
+    assert.equal(calls.length, 0);
+  }
+});
+
+test('responsive styles use card container size, not browser window width', () => {
+  assert.match(source, /container-type:inline-size/);
+  assert.match(source, /@container \\(min-width:355px\\)/);
+  assert.match(source, /grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
+  assert.match(source, /grid-template-columns:minmax\\(0,1fr\\)/);
+  assert.match(source, /Senaste IR-begäran/);
+  assert.match(source, /2026\\.10\\.0b3/);
 });

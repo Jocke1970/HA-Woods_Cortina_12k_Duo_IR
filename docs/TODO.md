@@ -34,12 +34,15 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 ## P1 — Better user experience (after core modes work)
 
-- [x] Premium Lovelace JavaScript card bundled with the integration; released for initial UI testing in `v0.1.0b2`.
+- [x] Premium Lovelace JS card in the HACS integration; narrow-layout and click feedback fixes included in `2026.10.0b3`.
 - [x] Hide/disable setpoint control in FAN and DRY **in the custom card**; retain the displayed last COOL target.
 - [ ] Review backend `climate.set_temperature` behavior in FAN/DRY separately; the generic HA thermostat and direct service calls still accept changes while those modes are active.
 - [ ] Consider optional external-temperature-aware *supervised* control.
   IR provides no actual appliance-state feedback, so plan failure/restart
   and anti-short-cycle handling before enabling automation.
+
+- [ ] Visually verify the responsive UI and the climate service click flow on a real Home Assistant dashboard at narrow and wide widths. Browser editor mode may intercept clicks.
+- [ ] Confirm HACS resource reload and cache-busting URL after updating from b2 to b3.
 
 ## P2 — Deferred extras (not blocking basic HEAT/beta work)
 
@@ -58,7 +61,7 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 - IR is one-way. `requested_power`, target, and mode are assumed last
   requests, not appliance feedback.
-- The HACS beta `v0.1.0b2` adds the bundled Lovelace card, without HEAT enabled.
+- The HACS beta `2026.10.0b3` adds the bundled Lovelace card, without HEAT enabled.
 - Keep any speculative HEAT and Auto Clean experimentation on `dev`
   until hardware-backed tests pass.
 
