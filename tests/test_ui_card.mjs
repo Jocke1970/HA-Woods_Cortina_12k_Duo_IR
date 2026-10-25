@@ -131,11 +131,15 @@ test('mode, swing, fan and power delegate to HA climate services', async () => {
   ]);
 });
 
-test('HEAT actions are never exposed or sent by this beta', async () => {
+test('HEAT mode is available in unreleased dev and calls climate service', async () => {
   const { card, calls } = createCard();
+  assert.ok(card.shadowRoot.innerHTML.includes('data-value="heat"'));
+  assert.ok(card.shadowRoot.innerHTML.includes('mdi:radiator'));
   await card._handleClick(click('mode', 'heat'));
-  assert.equal(calls.length, 0);
-  assert.ok(!card.shadowRoot.innerHTML.includes('data-value="heat"'));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'climate');
+  assert.equal(calls[0][1], 'set_hvac_mode');
+  assert.equal(calls[0][2].hvac_mode, 'heat');
 });
 
 test('unavailable entity is handled without emitting commands', async () => {
