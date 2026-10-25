@@ -14,11 +14,11 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 - [x] Candidate HEAT frame found from real HEAT transition at 22°C:
   `55 62 00 0D 00 00 10 84 58`; at 23°C:
   `55 72 00 0E 00 00 10 84 69`.
-- [ ] **Next capture:** learn `heat_power_off` then `heat_power_on` with
-  the original remote in HEAT 22°C/LOW; compare real receiver frames in
-  `docs/HEAT_CAPTURE.md`. Verify both physical transitions and identify
-  toggle semantics before enabling HA HEAT. Keep smartplug mains ON
-  during all captures; avoid rapid compressor cycling.
+- [x] Captured original-remote HEAT POWER OFF/ON and decoded both frames.
+- [x] **Physical RM4 replay:** learned HEAT OFF and ON both worked on
+  the real AC (user-confirmed).
+- [ ] Test b6's **generated** HEAT in climate/UI: 22°C, 22→23°C,
+  POWER OFF/ON, COOL↔HEAT transitions and fan speeds while supervised.
 - [ ] Confirm HEAT at another fan speed and/or setpoint, preferably including
   a fresh transition showing HEAT on the original remote's LCD.
 - [x] Implement captured HEAT state/power encoding, `HVACMode.HEAT`,
@@ -31,8 +31,8 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
   remote/AC behavior before changing backend semantics.
 - [ ] Regression-test basic COOL/DRY/FAN/OFF, restore behavior, and failure
   handling. No unattended automation while IR state is unconfirmed.
-- [ ] Review PR from `dev` to `beta` with green CI and user hardware
-  results, then release a HACS-installable prerelease.
+- [x] Review PR from `dev` to `beta` and release b6 only after green CI
+  and physically confirmed learned-command replay.
 
 ## P1 — Better user experience (after core modes work)
 
@@ -48,7 +48,8 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 - [ ] Investigate state desynchronization when AC is switched with its original IR remote. User observed that UI/climate control worked after starting the physical AC with the remote; distinguish physical power state, power-button toggle semantics, and whether non-power IR frames are ignored while off.
 - [ ] Capture original POWER on/off behavior before changing `_apply` or HA `turn_on`/`turn_off` semantics. The remote is one-way and `requested_power` is optimistic; avoid presenting a toggle as a guaranteed state-setting action.
 
-- [x] Put mode buttons and contextual power control in hero; expanders ordered **Fler inställningar** above **Strömförbrukning**; MDI icons for all three supported modes.
+- [x] Mode controls in hero, Fler inställningar above Strömförbrukning;
+  MDI icons for four supported modes and icon-only fan speeds 1/2/3.
 - [x] Restrict mains power-off to climate OFF + valid measured power ≤15 W + at least 60 seconds since last IR request + confirmation within 15 seconds; avoid any automatic switch/IR chaining.
 - [ ] Confirm with physical hardware that status mismatch caused by original remote is handled explicitly; these safety gates cannot guarantee compressor state.
 - [ ] Physical test of switch and energy entities in the user's HA; verify units, unavailable states, and safe power-down sequence. Do not automate switching off a running compressor.
@@ -70,9 +71,9 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 - IR is one-way. `requested_power`, target, and mode are assumed last
   requests, not appliance feedback.
-- The latest released HACS beta is `2026.10.0b5`. HEAT exists only in the **unreleased dev candidate** `2026.10.0b6`, pending real RM4 testing.
-- Keep any speculative HEAT and Auto Clean experimentation on `dev`
-  until hardware-backed tests pass.
+- HACS beta `2026.10.0b6` includes experimental HEAT after the learned HEAT power frames worked via RM4. Full generated-HEAT hardware regression tests remain.
+- Keep Auto Clean investigations on `dev` pending separate physical tests.
+  Do not promote b6 to `main` before further HEAT hardware regression tests.
 
 See [HEAT_CAPTURE.md](HEAT_CAPTURE.md) for decoded user captures and protocol
 hypotheses.

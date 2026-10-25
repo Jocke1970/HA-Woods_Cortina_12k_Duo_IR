@@ -1,7 +1,10 @@
 # HEAT reverse engineering — Wood's Cortina 12K Duo
 
-**HEAT is deliberately unavailable in the HA climate integration until
-validated original-remote captures have been decoded and verified on the AC.**
+**Current result:** The original-remote HEAT POWER OFF and ON commands
+were both successfully replayed through RM4 Mini on the physical Wood's Duo
+(user-confirmed). The encoder matches all captured HEAT frames.
+HEAT can now enter **supervised beta 2026.10.0b6**; the historical
+recording instructions below remain for reference.
 
 ## Reason for new captures
 
@@ -369,3 +372,18 @@ capture a second original-remote sample and investigate power semantics.
 A successful decode or green GitHub CI alone is **not** physical
 confirmation. Publish `2026.10.0b6` to HACS only after the physical
 RM4 test passes; follow `dev → beta → main`.
+
+
+## Physical HEAT replay confirmed — 26 October 2026
+
+The user confirms that **both** of the learned commands
+`woods_heat_research.heat_power_off` and
+`woods_heat_research.heat_power_on` worked when replayed from
+`remote.rm4_mini` and physically switched off/on the Wood's Cortina Duo.
+
+This validates RM4 playback of the learned original-remote frames,
+**not** yet the full generated Home Assistant HEAT state machine, every
+setpoint/fan speed, or idempotent power handling after original-remote
+changes. A supervised b6 HACS beta is appropriate; do not enable
+unattended HEAT/frost-protection automations until the newly generated
+path has been observed on the physical appliance.

@@ -1,23 +1,40 @@
-# Draft beta notes — 2026.10.0b6 (UNRELEASED)
+# Wood's Cortina 12K Duo IR — 2026.10.0b6 (beta)
 
-Prepared on `dev` only. **Do not publish via HACS until the user
-confirms actual HEAT power OFF/ON replay via RM4 Mini.**
+## HEAT for supervised testing
 
-- Adds HEAT to the climate mode list and the custom card (radiator icon).
-- Captured 22°C and 23°C HEAT states and separate 22°C HEAT POWER ON/OFF
-  frames are reproduced byte-for-byte by the production encoder.
-- Restores optimistic HEAT selection after HA restart, subject to the
-  same no-IR-feedback caveats as other modes.
-- Preserves COOL/DRY/FAN protocol behavior.
-- The B7 `0x04` bit present in ordinary HEAT state captures is
-  still unidentified. Auto Clean, timer and Sleep remain deferred.
-- No changes to smartplug/energy entities, safeguards or resource URL.
+- The owner confirmed that **both** learned original-remote HEAT POWER
+  OFF and POWER ON commands worked on the physical AC when replayed
+  through RM4 Mini.
+- HEAT is available in Home Assistant's climate modes and in the custom
+  card (radiator icon, temperature +/-).
+- Codec reproduces four real recorded HEAT frames byte-for-byte:
+  state 22°C and 23°C, POWER OFF and POWER ON at 22°C.
+- The newly generated HEAT path via the climate integration still needs
+  physical testing for temperature changes, mode changes and fan speeds.
 
-The original remote used separate ON and OFF payloads, but this is not
-proof that sending them via RM4 will start/stop the AC, nor that replaying
-them repeatedly is always safe with stale HA state. **No unattended
-heating, frost protection, or automated compressor cycling** until
-verified on hardware.
+## Lovelace card
 
-Install via HACS only after a tagged beta is published. Keep JavaScript
-resource URL `/woods_cortina/woods-cortina-card.js` unchanged.
+- Three fan buttons now use **mdi:fan-speed-1**, **mdi:fan-speed-2**
+  and **mdi:fan-speed-3** instead of Low/Medium/High text.
+- Swedish accessible labels, hover tooltips and on/off/selected behavior
+  of the original climate fan controls are preserved.
+- The four modes remain in the hero; smartplug and energy sections and
+  their safety guards are unchanged.
+
+## Important limitations
+
+- IR is one-way: all HA states are **optimistic requests**, not confirmed
+  physical appliance status. Never rely on these for mains power safety.
+- No unattended heating/frost protection or automated compressor control
+  while generated HEAT commands are still being manually validated.
+- Auto Clean, Sleep and Timer remain deferred.
+- The `0x04` flag in the HEAT state frame remains semantically unknown.
+
+## HACS
+
+Download prerelease `v2026.10.0b6` through HACS and restart Home Assistant.
+Keep the existing JS resource URL exactly:
+
+`/woods_cortina/woods-cortina-card.js`
+
+Do not add `?v=` or install `dev` directly.
