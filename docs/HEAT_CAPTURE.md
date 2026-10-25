@@ -121,3 +121,25 @@ The two **MODE-transition frames** should expose the real distinction if the mod
 ### BroadLink timing note (separate issue)
 
 The `b64:` packet samples use BroadLink `0x26` format. The codec's current transmit tick divisor `32.84` differs from the physical `~30.45 μs/tick` discussed in python-broadlink's protocol documentation and issue #839. The current generated COOL commands have already been observed to work despite this; do not silently change production TX timing during HEAT discovery. Revisit as a separate supervised regression test before future beta.
+
+### Additional MODE capture (25 October 2026)
+
+Original-remote recording labeled `heat_mode_22` decoded to
+`55 72 00 0E 00 00 10 84 69`: exactly the **23°C** frame from
+`heat_23_low`, not a 22°C frame. It is a fresh IR sample with different
+pulse timings but the same 72 payload bits.
+
+**Status:** We have yet to observe any changed *mode* byte across the
+labeled COOL and HEAT recordings. B6=`0x10` and B7=`0x84` in all four.
+B7 bit 2 is described as auto-clean in the upstream codec. This raises
+questions about remote state or model variant; do not assume this is
+intentional auto-clean use.
+
+**Next verification:** Inspect the original remote LCD **after** the MODE
+press and also confirm the numeric setpoint. The user should capture two
+fresh transitions *into* COOL and *into* HEAT, naming each only after
+visually confirming the final mode. If results remain ambiguous, capture
+all five mode transitions sequentially with their displayed mode labels.
+
+The Duo manual lists five modes including HEAT. No generated HEAT
+transmission is authorized by these captures.
