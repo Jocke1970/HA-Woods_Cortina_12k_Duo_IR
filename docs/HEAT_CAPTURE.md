@@ -216,3 +216,18 @@ known COOL baseline predicts `55 72 00 0E 00 00 10 84 69`, already
 observed in the earlier real HEAT 23°C capture.
 
 **These are observations / offline tests only. We have not sent generated HEAT from the HA integration.**
+
+## Deferred: user-observed AUTO CLEAN icon
+
+During the `auto_clean` learning operation, the user observed the Auto Clean
+**icon lighting up on the original remote display**, but did **not** observe
+a clear special action on the appliance. The recording decoded identically
+to the recorded HEAT 22°C frame.
+
+Interpretation is **unresolved**. An illuminated remote icon does not
+prove that an Auto Clean cycle started on the physical AC. We will **not**
+investigate further in the current HEAT milestone; Auto Clean and timer
+functions are explicitly postponed to the backlog, along with Sleep and
+other nonessential extras.
+
+See `docs/TODO.md`.

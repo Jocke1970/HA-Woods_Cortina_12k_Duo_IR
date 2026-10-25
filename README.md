@@ -2,7 +2,7 @@
 
 **Experimental beta for supervised testing.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
 
-> No real-hardware validation has been completed. In particular, compatibility with the **Duo** remote and heating-mode encoding are unverified. Heat is deliberately not offered.
+> **Hardware test update (2026-10-25):** Generated COOL temperature changes from the HA `climate` entity have been confirmed on the physical Duo AC via RM4 Mini. Captured MODE transitions strongly suggest a HEAT encoding, but generated HEAT commands, power transitions, and other functions remain unverified. HEAT is deliberately not offered yet.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ There is no need for the upstream ESPHome firmware. Install **only GitHub beta r
 
 ## Not implemented / intentionally disabled
 
-- **Heat mode:** absent from the original reverse-engineered codec. Do not guess its IR value.
+- **Heat mode:** first original-remote captures strongly suggest B6=`0x10`/mode `-1`, but generated HEAT frames and power transitions have not been tested on the appliance. Keep disabled pending supervised validation.
 - Automatic room-temperature compensation, anti-short-cycle control, timers, sleep and auto clean in the HA UI.
 - Reading Wood's *internal* room sensor (IR is send-only).
 - Detecting changes made with the appliance's physical buttons or original remote.
@@ -48,4 +48,4 @@ There is no need for the upstream ESPHome firmware. Install **only GitHub beta r
 
 `dev → beta → main`. No code will be merged to `main` until validated and reviewed. Run `python -m pytest -q` and `python -m compileall -q custom_components`.
 
-See [docs/IR_PROTOCOL.md](docs/IR_PROTOCOL.md) for the exact reused algorithm, BroadLink packing, assumptions, and the IR-test matrix.
+See [docs/IR_PROTOCOL.md](docs/IR_PROTOCOL.md) for the IR encoding, [docs/HEAT_CAPTURE.md](docs/HEAT_CAPTURE.md) for real remote captures and unresolved HEAT behavior, and [docs/TODO.md](docs/TODO.md) for the prioritized roadmap.
