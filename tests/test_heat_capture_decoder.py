@@ -109,3 +109,17 @@ def test_labeled_cool_and_heat_22_are_identical_important_non_finding():
     assert [(i, a, b) for i, (a, b) in enumerate(zip(decoded[1], decoded[2]))
             if a != b] == [(1, 0x62, 0x72), (3, 0x0D, 0x0E), (8, 0x58, 0x69)]
     assert "UNKNOWN(-1)" in describe(decoded[0])
+
+
+# Fresh original-remote MODE-button recording labeled "heat_mode_22".
+# Decodes to the same 23°C payload as "heat_23_low" — *not* a new heat mode.
+
+def test_mode_button_capture_is_23c_and_has_no_mode_difference():
+    mode_press = "JgCYAAABgaMREBQ/EQ8VPRIQFD4REBQ9EhATQBM9FD4REBEQFD4REBIQERARERERDxASEBEQEg8SDxERERARERM9FD8UPRIQEREREBEQEBEREBERERARDxIQEREQEREQERAREBEQEg8SERAREBAUPxEQEBEQEREREz0SEBEQEhAREBQ9EhAREREOFD8UPRIQEz4REREQFD8QAA0F"
+    actual = decode_woods_frame(broadlink_to_durations(mode_press))
+    earlier_23 = decode_woods_frame(
+        broadlink_to_durations(ORIGINAL_CAPTURES["heat_23_low"][0])
+    )
+    assert actual == earlier_23
+    assert actual.hex(" ").upper() == "55 72 00 0E 00 00 10 84 69"
+    assert (actual[1] >> 4) + 16 == 23
