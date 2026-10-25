@@ -1,4 +1,4 @@
-# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b4
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b5
 
 The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
@@ -9,7 +9,7 @@ JavaScript dependency. Home Assistant serves its JavaScript from
 ## Upgrade from b1 and load the card
 
 1. From the already-added HACS custom repository, choose beta
-   `2026.10.0b4` and download/update it.
+   `2026.10.0b5` and download/update it.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
@@ -41,20 +41,26 @@ resources:
     type: module
 ```
 
-## Smartplug power and energy (new in 2026.10.0b4)
+## Smartplug power and energy (new in 2026.10.0b5)
 
-The card now shows **two deliberately separate power controls**:
+The card has a **single primary power button** in the top panel with two context-sensitive functions:
 
-- **Strömförsörjning / Bryt ström** sends `switch.turn_off` and
-  `switch.turn_on` to the **mains smartplug**, not IR. Power-off requires
-  **two explicit clicks**. **Do not cut mains power while the compressor
-  is running**: first stop the AC with its native IR command and allow
-  the unit to complete its shutdown sequence. The confirmation cannot
-  verify compressor state; it is only a guard against accidental taps.
-- **Starta/Stoppa AC via IR** uses the existing `climate` entity. It does
-  not automatically change the smartplug. When the plug is explicitly
-  `off`, IR control buttons are disabled. If the plug is unavailable,
-  its control is disabled; IR remains available because plug state is unknown.
+- When smartplug is **OFF**, the main power button only sends
+  `switch.turn_on` for `switch.woods_cortina_silent_12k_duo`. It
+  **does not** start the AC automatically.
+- When smartplug is **ON**, the same button sends
+  `climate.turn_on` or `climate.turn_off`, never changing the smartplug.
+- When HA's climate state is **OFF**, a secondary, small
+  **Bryt huvudström** control appears beside the mains indicator.
+  The secondary control is not available while HA thinks AC is ON.
+  It requires **two clicks within 15 seconds**, a valid HA-reported
+  power measurement at or below **15 W**, and at least **60 seconds**
+  since the last successful IR request. A missing power measurement
+  or timestamp blocks mains-off. These are *additional* precautions,
+  not evidence the physical compressor has stopped.
+- The main power button is disabled when the smartplug state is
+  `unknown`/`unavailable`; mode and setpoint controls still rely
+  on climate behavior when plug state is unknown.
 
 Energy readings show actual states and units from three HA sensors, without
 calculated conversions or extrapolation. Unknown/unavailable readings appear
@@ -77,6 +83,18 @@ energy_monthly: sensor.woods_cortina_silent_12k_duo_energy_monthly
 The values in these four fields may be overridden for another installation.
 The default, permanent JavaScript module URL stays
 `/woods_cortina/woods-cortina-card.js`, **without query parameters**.
+
+## Layout in 2026.10.0b5
+
+The **top hero** now includes temperature, COOL/DRY/FAN mode buttons with
+distinct Home Assistant MDI icons, and the context-sensitive power button.
+Below the hero, the order is:
+1. **Fler inställningar** (fan speed, swing, energy-saver)
+2. **Strömförbrukning** (collapsible power and daily/monthly energy readouts).
+
+Both expanders keep their open/closed state across climate updates.
+There is no external icon library. The Lovelace resource path is unchanged
+and has **no version parameter**.
 
 ## Implemented UI
 

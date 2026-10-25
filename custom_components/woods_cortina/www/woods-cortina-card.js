@@ -4,13 +4,25 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0b4";
+  const VERSION = "2026.10.0b5";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "dry", label: "Avfuktning", icon: "mdi:water-percent" },
     { value: "fan_only", label: "Fläkt", icon: "mdi:fan" },
   ];
   const FAN_NAMES = { low: "Låg", medium: "Medel", high: "Hög" };
+  // Secondary guard only: physical compressor feedback is not available via IR.
+  const MAINS_OFF_MAX_WATTS = 15;
+  const MAINS_OFF_COOLDOWN_MS = 60000;
+  const wattsReading = (entity) => {
+    if (!entity || ["unavailable", "unknown", ""].includes(entity.state)) return null;
+    const n = Number(entity.state);
+    const unit = entity.attributes?.unit_of_measurement;
+    if (!Number.isFinite(n) || n < 0) return null;
+    if (unit === "W") return n;
+    if (unit === "kW") return n * 1000;
+    return null;
+  };
   const DEFAULT_SENSORS = Object.freeze({
     power_entity: "switch.woods_cortina_silent_12k_duo",
     power_sensor: "sensor.woods_cortina_silent_12k_duo_power",
@@ -65,41 +77,32 @@
     .room strong{display:block;margin-top:3px;font-size:18px;font-weight:650}
     .room .muted{color:#c9e0eb;font-size:10px;line-height:1.35;overflow-wrap:anywhere}
     .hint{font-size:11px;color:var(--secondary-text-color,#8d9da7);margin-top:10px;line-height:1.45}
-    .section{margin-top:18px}
-    .section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--secondary-text-color,#9aa7b0);font-weight:700;margin-bottom:10px}
-    .modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
-    .mode{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;min-width:0;min-height:75px;padding:6px 2px;border-radius:11px;border:1px solid var(--divider-color,rgba(145,165,190,.21));background:rgba(118,145,165,.065);color:var(--primary-text-color,#eef6ff);font-size:clamp(10px,3.3cqi,12px);font-weight:600;overflow-wrap:anywhere}
+    .hero-controls{position:relative;z-index:1;margin-top:19px;padding-top:15px;border-top:1px solid rgba(255,255,255,.19)}
+    .hero-label{font-size:10px;letter-spacing:.12em;font-weight:700;color:#b9d7e8;margin-bottom:9px}
+    .hero-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+    .mode{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-width:0;min-height:74px;padding:9px 3px;border-radius:11px;border:1px solid rgba(188,224,240,.25);background:rgba(255,255,255,.07);color:#d6e9f4;font-size:clamp(10px,3.2cqi,12px);font-weight:650;overflow-wrap:anywhere}
     .mode span{max-width:100%;text-align:center}
-    .mode ha-icon{--mdc-icon-size:22px;color:#8cabbc}
-    .mode.active{background:rgba(57,166,216,.14);border-color:#49a7ce;color:var(--primary-text-color,#f6fcff)}
-    .mode.active ha-icon{color:#35acd4}
-    .mode:not(:disabled):hover{border-color:#79bcd6}
-    .main-actions{display:flex;gap:10px;margin-top:15px}
-    .supply{margin-top:15px;padding:12px;border:1px solid var(--divider-color,rgba(140,160,185,.22));border-radius:14px;background:rgba(103,139,161,.06)}
-    .supply-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-    .supply-label{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.03em}
-    .supply-label ha-icon{--mdc-icon-size:17px;color:var(--secondary-text-color,#8fabb5)}
-    .supply-state{font-size:10px;color:var(--secondary-text-color,#a4b1bd)}
-    .supply-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
-    .watts-label,.energy-label{font-size:10px;color:var(--secondary-text-color,#8ba1af);line-height:1.35}
-    .watts-value{font-size:clamp(20px,8cqi,29px);line-height:1.25;font-weight:750;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-    .mains-button{min-height:42px;border:1px solid rgba(50,145,171,.45);background:rgba(39,124,156,.12);color:var(--primary-text-color,#fff);border-radius:11px;padding:8px 9px;display:flex;justify-content:center;align-items:center;gap:5px;font-size:11px;font-weight:700}
-    .mains-button ha-icon{--mdc-icon-size:18px}
-    .mains-button.is-on{border-color:rgba(214,127,93,.43);background:rgba(180,96,68,.09)}
-    .mains-button.confirm{background:rgba(201,111,67,.18);border-color:#db8550}
-    .energy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:11px}
-    .energy-cell{padding:9px 8px;background:rgba(128,159,178,.07);border:1px solid var(--divider-color,rgba(128,159,178,.14));border-radius:10px;min-width:0}
-    .energy-value{font-size:13px;font-weight:700;margin-top:3px;line-height:1.35;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-    .supply-warning{margin-top:9px;font-size:10px;color:var(--secondary-text-color,#a4b0b8);line-height:1.45}
-    .supply-warning.urgent{color:var(--error-color,#db876b);font-weight:600}
-    .power{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;border-radius:12px;padding:10px 13px;flex:1;background:#277c9c;border:1px solid #277c9c;color:white;font-size:12px;font-weight:700}
-    .power.off{background:rgba(128,149,165,.10);border-color:var(--divider-color,rgba(140,160,185,.22));color:var(--primary-text-color,#f0f6fa)}
-    .power ha-icon{--mdc-icon-size:18px}
-    details{margin-top:13px;border-top:1px solid var(--divider-color,rgba(140,160,185,.23));padding-top:7px}
-    summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;padding:10px 2px;font-size:12px;font-weight:650;color:var(--secondary-text-color,#aab8c6)}
-    summary::-webkit-details-marker{display:none}
-    summary:after{content:"⌄";font-size:19px;line-height:1;flex:none}
-    details[open] summary:after{transform:rotate(180deg)}
+    .mode ha-icon{--mdc-icon-size:23px;color:#b6d4e6}
+    .mode[data-value="cool"] ha-icon{color:#82d8ff}
+    .mode[data-value="dry"] ha-icon{color:#6cdddf}
+    .mode[data-value="fan_only"] ha-icon{color:#c1dbff}
+    .mode.active{background:rgba(69,186,237,.23);border-color:#74d2ff;box-shadow:inset 0 0 0 1px rgba(100,211,255,.2);color:#fff}
+    .mode:not(:disabled):hover{background:rgba(255,255,255,.15)}
+    .power{display:flex;align-items:center;justify-content:center;gap:9px;min-height:46px;width:100%;border-radius:12px;padding:10px 13px;background:#28a0c0;border:1px solid rgba(141,235,255,.7);color:#fff;font-size:13px;font-weight:750}
+    .power.off{background:rgba(236,248,255,.11);border-color:rgba(236,248,255,.28)}
+    .power ha-icon{--mdc-icon-size:20px}
+    .hero-power-area{margin-top:12px}
+    .supply-indicator{margin-top:7px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10px;color:#c5dfec}
+    .supply-indicator ha-icon{--mdc-icon-size:14px}
+    .mains-off-link{background:transparent;border:1px solid rgba(204,231,244,.36);border-radius:9px;color:#ebf8ff;font-size:10px;padding:5px 8px;min-height:28px;line-height:1.2}
+    .mains-off-link.confirm{background:rgba(237,122,72,.24);border-color:#e7a075}
+    .mains-warning{margin-top:8px;font-size:10px;color:#ffcfb2;line-height:1.45}
+    .panel{margin-top:12px;border-top:1px solid var(--divider-color,rgba(140,160,185,.23));padding-top:5px}
+    .panel summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;padding:12px 2px;font-size:12px;font-weight:700;color:var(--secondary-text-color,#aab8c6)}
+    .panel summary::-webkit-details-marker{display:none}
+    .panel summary:after{content:"⌄";font-size:19px;line-height:1;flex:none}
+    .panel[open] summary:after{transform:rotate(180deg)}
+    .summary-value{font-size:12px;font-weight:700;color:var(--primary-text-color,#fff);margin-left:auto;font-variant-numeric:tabular-nums}
     .advanced{padding:7px 0 4px}
     .chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
     .chip{min-width:0;border-radius:10px;border:1px solid var(--divider-color,rgba(140,160,185,.25));background:transparent;color:var(--primary-text-color,#f7fbfe);min-height:37px;padding:6px 4px;font-size:11px;overflow-wrap:anywhere}
@@ -107,6 +110,10 @@
     .row-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
     .row-title{font-size:11px;color:var(--secondary-text-color,#96a6b7);margin:15px 0 8px}
     .fineprint{font-size:10.5px;color:var(--secondary-text-color,#9bacb9);line-height:1.5;padding:11px 2px 1px}
+    .energy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:3px}
+    .energy-cell{padding:10px 8px;background:rgba(128,159,178,.07);border:1px solid var(--divider-color,rgba(128,159,178,.14));border-radius:10px}
+    .energy-label{font-size:10px;color:var(--secondary-text-color,#90a3af)}
+    .energy-value{font-size:13px;font-weight:700;margin-top:4px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
     .bottom{display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--divider-color,rgba(140,160,185,.23));padding-top:12px;margin-top:14px;color:var(--secondary-text-color,#90a0b0);font-size:10px;overflow-wrap:anywhere}
     .bottom .stamp{display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.3}
     .notice{margin-top:11px;padding:9px 11px;background:rgba(39,124,156,.11);border:1px solid rgba(39,124,156,.30);border-radius:10px;color:var(--primary-text-color,#dde9ef);font-size:11px;line-height:1.4}
@@ -144,8 +151,12 @@
       this._confirmMainsOff = false;
       this._confirmMainsOffAt = 0;
       this._advanced = false;
+      this._consumption = false;
       this.shadowRoot.addEventListener("toggle", (event) => {
-        if (event.target && event.target.tagName === "DETAILS") this._advanced = event.target.open;
+        if (event.target && event.target.tagName === "DETAILS") {
+          if (event.target.dataset?.panel === "settings") this._advanced = event.target.open;
+          if (event.target.dataset?.panel === "consumption") this._consumption = event.target.open;
+        }
       }, true);
     }
 
@@ -180,8 +191,8 @@
       this._render();
     }
 
-    getCardSize() { return this._advanced ? 10 : 7; }
-    getGridOptions() { return { columns: 6, min_columns: 3, rows: this._advanced ? 9 : 7 }; }
+    getCardSize() { return 7 + (this._advanced ? 2 : 0) + (this._consumption ? 2 : 0); }
+    getGridOptions() { return { columns: 6, min_columns: 3, rows: this.getCardSize() }; }
 
     _entity() {
       return this._hass && this._config ? this._hass.states[this._config.entity] : null;
@@ -214,6 +225,7 @@
       const watts = formatReading(this._hass.states[this._config.power_sensor], 1);
       const daily = formatReading(this._hass.states[this._config.energy_daily], 2);
       const monthly = formatReading(this._hass.states[this._config.energy_monthly], 2);
+      const physicalWatts = wattsReading(this._hass.states[this._config.power_sensor]);
       const on = this._isActiveMode(entity);
       const cooling = on && entity.state === "cool";
       const adjustable = cooling && !this._busy && !mainsOff;
@@ -221,6 +233,19 @@
       const target = Number.isFinite(value) ? value : 22;
       const room = attr.current_temperature == null ? "—" : fmt(attr.current_temperature) + " °C";
       const fanAvailable = on && entity.state !== "dry" && !this._busy && !mainsOff;
+      const lastIrTime = Date.parse(attr.last_ir_sent_at || "");
+      const cooledDown = Number.isFinite(lastIrTime) &&
+        (Date.now() - lastIrTime >= MAINS_OFF_COOLDOWN_MS);
+      const mainsOffAllowed = mainsOn && !on && !this._busy &&
+        physicalWatts !== null && physicalWatts <= MAINS_OFF_MAX_WATTS && cooledDown;
+      if (this._confirmMainsOff && !mainsOffAllowed) {
+        this._confirmMainsOff = false;
+        this._confirmMainsOffAt = 0;
+      }
+      const mainsReason = on ? "Stoppa AC:n via IR först." :
+        physicalWatts === null ? "Effektmätning saknas – huvudström kan inte brytas säkert." :
+        physicalWatts > MAINS_OFF_MAX_WATTS ? "AC:n drar fortfarande effekt – avvakta." :
+        !cooledDown ? "Vänta minst 60 sekunder efter senaste IR-kommando." : "";
       const modeButtons = MODES.filter((m) => this._allowed(entity, m.value))
         .map((m) => `<button class="mode ${entity.state === m.value ? "active" : ""}" type="button"
           data-action="mode" data-value="${m.value}" aria-pressed="${entity.state === m.value}"
@@ -271,43 +296,32 @@
                 <div><div class="minor-caption">RUMSTEMPERATUR</div><strong>${room}</strong></div>
                 <div class="muted">Begärda inställningar<br>ej bekräftad AC-status</div>
               </div>
+              <div class="hero-controls">
+                <div class="hero-label">DRIFTLÄGE</div>
+                <div class="hero-modes">${modeButtons}</div>
+                <div class="hero-power-area">
+                  <button type="button" class="power ${on && mainsOn ? "" : "off"}"
+                    data-action="power" aria-label="${mainsOff ? "Slå på huvudström" : mainsOn ? (on ? "Stoppa AC via IR" : "Starta AC via IR") : "Huvudström okänd"}"
+                    ${this._busy || !mainsOnline ? "disabled" : ""}>
+                    <ha-icon icon="${mainsOff ? "mdi:power-plug" : "mdi:power"}"></ha-icon>
+                    ${mainsOff ? "Slå på huvudström" : mainsOn ? (on ? "Stoppa AC" : "Starta AC") : "Huvudström okänd"}
+                  </button>
+                  <div class="supply-indicator">
+                    <span><ha-icon icon="mdi:power-plug"></ha-icon>
+                      ${mainsOn ? "Huvudström på" : mainsOff ? "Huvudström av" : "Ingen status från smartplugg"}</span>
+                    ${mainsOn && !on ? `<button type="button" class="mains-off-link ${this._confirmMainsOff ? "confirm" : ""}"
+                      data-action="mains_off" ${!mainsOffAllowed ? "disabled" : ""}
+                      aria-label="Bryt huvudström när AC:n är stoppad">
+                      ${this._confirmMainsOff ? "Bekräfta frånkoppling" : "Bryt huvudström"}
+                    </button>` : ""}
+                  </div>
+                  ${mainsOn && !on && !mainsOffAllowed ? `<div class="mains-warning">${htmlEscape(mainsReason)}</div>` : ""}
+                  ${this._confirmMainsOff ? '<div class="mains-warning">Kontrollera att AC:n verkligen har stannat. Tryck igen för att bryta huvudströmmen.</div>' : ""}
+                </div>
+              </div>
             </div>
             ${!cooling ? `<div class="hint">${htmlEscape(disabledText)}</div>` : ""}
-            <div class="supply">
-              <div class="supply-head">
-                <span class="supply-label"><ha-icon icon="mdi:power-plug"></ha-icon> Strömförsörjning</span>
-                <span class="supply-state">${mainsOn ? "Ström på" : mainsOff ? "Ström av" : "Okänd status"}</span>
-              </div>
-              <div class="supply-top">
-                <div><div class="watts-label">Aktuell effekt</div><div class="watts-value">${htmlEscape(watts)}</div></div>
-                <button type="button" class="mains-button ${mainsOn ? "is-on" : ""} ${this._confirmMainsOff ? "confirm" : ""}"
-                  data-action="mains" aria-label="Smartplugg: ${mainsOn ? "bryt ström" : "slå på ström"}"
-                  ${!mainsOnline || this._busy ? "disabled" : ""}>
-                  <ha-icon icon="mdi:power-socket-eu"></ha-icon>
-                  ${this._confirmMainsOff ? "Bekräfta av" : mainsOn ? "Bryt ström" : "Slå på ström"}
-                </button>
-              </div>
-              <div class="energy-grid">
-                <div class="energy-cell"><div class="energy-label">Idag</div><div class="energy-value">${htmlEscape(daily)}</div></div>
-                <div class="energy-cell"><div class="energy-label">Denna månad</div><div class="energy-value">${htmlEscape(monthly)}</div></div>
-              </div>
-              <div class="supply-warning ${this._confirmMainsOff ? "urgent" : ""}">
-                ${this._confirmMainsOff
-                  ? "VARNING: Bryt inte ström medan AC:n arbetar. Stoppa via IR och låt apparaten stanna först. Tryck igen endast om du är säker."
-                  : "Strömknappen styr smartpluggen, inte AC:ns IR-läge."}
-              </div>
-            </div>
-            <div class="section">
-              <div class="section-title"><span>Driftläge</span><span>${saver && cooling ? "ENERGY SAVER" : ""}</span></div>
-              <div class="modes">${modeButtons}</div>
-            </div>
-            <div class="main-actions">
-              <button type="button" class="power ${on ? "" : "off"}" data-action="power"
-                ${this._busy || mainsOff ? "disabled" : ""}>
-                <ha-icon icon="mdi:power"></ha-icon>${on ? "Stoppa AC via IR" : "Starta AC via IR"}
-              </button>
-            </div>
-            <details ${this._advanced ? "open" : ""}>
+            <details class="panel" data-panel="settings" ${this._advanced ? "open" : ""}>
               <summary>Fler inställningar</summary>
               <div class="advanced">
                 <div class="row-title">Fläkthastighet</div>
@@ -323,6 +337,19 @@
                 </div>
                 <div class="fineprint">HEAT, Auto Clean och timer är ännu inte aktiverade.
                   IR-kommandon är enkelriktade; kortet visar senast begärt tillstånd.</div>
+              </div>
+            </details>
+            <details class="panel" data-panel="consumption" ${this._consumption ? "open" : ""}>
+              <summary><span><ha-icon icon="mdi:lightning-bolt" style="--mdc-icon-size:17px"></ha-icon> Strömförbrukning</span>
+                <span class="summary-value">${htmlEscape(watts)}</span></summary>
+              <div class="advanced">
+                <div class="energy-grid">
+                  <div class="energy-cell"><div class="energy-label">Just nu</div><div class="energy-value">${htmlEscape(watts)}</div></div>
+                  <div class="energy-cell"><div class="energy-label">Huvudström</div><div class="energy-value">${mainsOn ? "På" : mainsOff ? "Av" : "Okänd"}</div></div>
+                  <div class="energy-cell"><div class="energy-label">Idag</div><div class="energy-value">${htmlEscape(daily)}</div></div>
+                  <div class="energy-cell"><div class="energy-label">Denna månad</div><div class="energy-value">${htmlEscape(monthly)}</div></div>
+                </div>
+                <div class="fineprint">Effekt och energi mäts av smartpluggen. AC:ns driftläge kommer från IR-kommandon utan återkoppling.</div>
               </div>
             </details>
             ${this._notice ? `<div class="notice" role="status" aria-live="polite">${htmlEscape(this._notice)}</div>` : ""}
@@ -355,41 +382,65 @@
       const action = button.dataset.action;
       const value = button.dataset.value;
       const mains = this._mainsEntity();
-      if (action !== "mains" && mains?.state === "off") {
-        this._error = "Smartpluggen är avstängd. Slå på strömmen innan IR-styrning.";
+      const mainsOff = mains?.state === "off";
+      const mainsOn = mains?.state === "on";
+      const on = this._isActiveMode(entity);
+      const attr = entity.attributes || {};
+      if (action !== "power" && action !== "mains_off" && mainsOff) {
+        this._error = "Huvudströmmen är avstängd. Slå på den innan IR-styrning.";
         this._notice = "";
         this._render();
         return;
       }
-      const on = this._isActiveMode(entity);
-      const attr = entity.attributes || {};
       let domain = "climate";
       let service = "";
       let targetId = this._config.entity;
       let data = {};
-      if (action === "mains") {
-        if (!mains || !["on", "off"].includes(mains.state)) return;
-        if (this._confirmMainsOff && Date.now() - this._confirmMainsOffAt > 15000) {
+      if (action === "mains_off") {
+        // Fail closed. Home Assistant's optimistic climate state alone
+        // cannot prove the real compressor has stopped.
+        const physicalWatts = wattsReading(this._hass.states[this._config.power_sensor]);
+        const lastIrTime = Date.parse(attr.last_ir_sent_at || "");
+        const cooldown = Number.isFinite(lastIrTime) &&
+          (Date.now() - lastIrTime >= MAINS_OFF_COOLDOWN_MS);
+        if (!mainsOn || on || physicalWatts === null ||
+            physicalWatts > MAINS_OFF_MAX_WATTS || !cooldown) {
           this._confirmMainsOff = false;
           this._confirmMainsOffAt = 0;
+          this._error = "Huvudström får bara brytas när AC:n är stoppad, effekten är låg och efter väntetid.";
+          this._notice = "";
+          this._render();
+          return;
         }
-        if (mains.state === "on" && !this._confirmMainsOff) {
+        if (Date.now() - this._confirmMainsOffAt > 15000) this._confirmMainsOff = false;
+        if (!this._confirmMainsOff) {
           this._confirmMainsOff = true;
           this._confirmMainsOffAt = Date.now();
+          this._notice = "Bekräfta endast när den fysiska AC:n verkligen har stannat.";
           this._error = "";
-          this._notice = "Bekräfta endast om AC:n har stoppats via IR och fått stanna.";
           this._render();
           return;
         }
         domain = "switch";
         targetId = this._config.power_entity;
-        service = mains.state === "on" ? "turn_off" : "turn_on";
+        service = "turn_off";
       } else {
         this._confirmMainsOff = false;
         this._confirmMainsOffAt = 0;
       }
       if (action === "power") {
-        service = on ? "turn_off" : "turn_on";
+        if (mainsOff) {
+          domain = "switch";
+          targetId = this._config.power_entity;
+          service = "turn_on";
+        } else if (mainsOn) {
+          service = on ? "turn_off" : "turn_on";
+        } else {
+          this._error = "Huvudströmmens status är okänd – powerknappen är spärrad.";
+          this._notice = "";
+          this._render();
+          return;
+        }
       } else if (action === "mode" && this._allowed(entity, value)) {
         if (value === entity.state) return;
         service = "set_hvac_mode";
