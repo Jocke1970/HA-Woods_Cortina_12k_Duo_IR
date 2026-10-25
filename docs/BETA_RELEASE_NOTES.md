@@ -1,39 +1,41 @@
-# Wood's Cortina IR — 2026.10.0b3 (beta)
+# Wood's Cortina 12K Duo IR — 2026.10.0b4 (beta)
 
-First CalVer beta using the required `YYYY.MM.0bN` format.
+## New smartplug power and energy section
 
-## Changes from v0.1.0b2
+- Adds **Strömförsörjning** for the existing smartplug
+  `switch.woods_cortina_silent_12k_duo`, distinct from the existing
+  climate IR start/stop control.
+- Shows actual consumption from
+  `sensor.woods_cortina_silent_12k_duo_power`,
+  `sensor.woods_cortina_silent_12k_duo_energy_daily`, and
+  `sensor.woods_cortina_silent_12k_duo_energy_monthly`.
+- Uses each sensor's HA-reported measurement unit; displays `—` for
+  missing or unavailable data.
+- Smartplug ON uses `switch.turn_on`; OFF requires a second confirmation
+  click and uses `switch.turn_off`. Never automatically chains IR and
+  smartplug calls. IR controls are disabled when the plug is explicitly off.
+- Four optional card configuration keys are available with the user's
+  provided entity IDs preconfigured as defaults. Existing dashboard
+  YAML need not change.
+- Additional frontend tests cover sensor formatting, missing entities,
+  smartplug clicks and separation of IR from mains controls.
 
-- **Narrow-card layout fix:** responsive container-based layout prevents
-  temperature buttons from being clipped; status and title no longer
-  collide. Room temperature and footer are easier to read.
-- **Interaction hardening:** direct event listeners on each rendered
-  button, visible *sending* and HA *accepted* feedback, and visible
-  service-call errors. Adds JS interaction tests using the actual
-  bound button handlers instead of only invoking private methods.
-- Compact footer shows the time of the last requested IR transmission
-  and exposes the full timestamp as a tooltip.
-- Frontend cache-busting resource URL documented.
-- Updated backend/JS/display/manifest version `2026.10.0b3`.
-- IR codec and climate backend behavior unchanged from b2.
-  HEAT, Auto Clean, timer, and Sleep remain unavailable.
+## Important safety considerations
 
-**Important:** No physical RM4 transmission or confirmed appliance
-status is implied by a successful HA service call. Test manually in
-a **normal (not editing) dashboard view**.
+**Do not interrupt mains while the AC compressor is operating.**
+Stop the AC with its native control first; wait for its shutdown sequence
+to finish. The two-click guard does not detect whether the compressor
+is actually running. HA climate state remains optimistic because
+the RM4 communicates by one-way IR.
 
-## Upgrade via HACS
+The previous power/IR synchronization concern is **not** automatically
+resolved by this UI update. Continue physical supervision.
 
-Download beta prerelease `v2026.10.0b3` in the HACS custom
-repository, restart Home Assistant, then **edit the existing dashboard
-JavaScript module resource** to:
+## Installation
 
-```
-/woods_cortina/woods-cortina-card.js?v=2026.10.0b3
-```
-
-Hard-refresh the browser (Ctrl+Shift+R). No need to add a second
-resource or copy frontend files.
+Update the HACS custom repository to prerelease `v2026.10.0b4`,
+restart HA and reload the browser. Keep the one-time resource as
+`/woods_cortina/woods-cortina-card.js` — **no `?v=` suffix**.
 
 ```yaml
 type: custom:woods-cortina-card
@@ -41,5 +43,5 @@ entity: climate.wood_s_cortina_12k_duo
 name: Wood's Cortina
 ```
 
-Please verify COOL temperature +/−, mode switching and power
-and observe last_ir_sent_at in the HA climate entity.
+All existing IR backend behavior remains unchanged.
+HEAT, AUTO CLEAN, TIMER and SLEEP remain disabled or postponed.

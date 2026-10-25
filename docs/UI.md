@@ -1,23 +1,24 @@
-# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b3
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b4
 
 The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
 JavaScript dependency. Home Assistant serves its JavaScript from
 `custom_components/woods_cortina/www/woods-cortina-card.js` at the URL
-`/woods_cortina/woods-cortina-card.js?v=2026.10.0b3`.
+`/woods_cortina/woods-cortina-card.js`.
 
 ## Upgrade from b1 and load the card
 
 1. From the already-added HACS custom repository, choose beta
-   `2026.10.0b3` and download/update it.
+   `2026.10.0b4` and download/update it.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
    Home Assistant frontend) and add the new resource:
-   - URL: `/woods_cortina/woods-cortina-card.js?v=2026.10.0b3`
+   - URL: `/woods_cortina/woods-cortina-card.js`
    - Type: **JavaScript module**
-4. Hard-refresh the browser after registering the module
-   (`Ctrl+Shift+R` on Linux).
+4. Reload the dashboard once the resource is registered. If the old card
+   persists, a browser hard-refresh (`Ctrl+Shift+R` on Linux) is a fallback,
+   **not** a reason to modify the resource URL.
 5. Edit a dashboard → **Add card → Manual**, then use:
 
 ```yaml
@@ -36,9 +37,46 @@ instead of adding it through the UI:
 
 ```yaml
 resources:
-  - url: /woods_cortina/woods-cortina-card.js?v=2026.10.0b3
+  - url: /woods_cortina/woods-cortina-card.js
     type: module
 ```
+
+## Smartplug power and energy (new in 2026.10.0b4)
+
+The card now shows **two deliberately separate power controls**:
+
+- **Strömförsörjning / Bryt ström** sends `switch.turn_off` and
+  `switch.turn_on` to the **mains smartplug**, not IR. Power-off requires
+  **two explicit clicks**. **Do not cut mains power while the compressor
+  is running**: first stop the AC with its native IR command and allow
+  the unit to complete its shutdown sequence. The confirmation cannot
+  verify compressor state; it is only a guard against accidental taps.
+- **Starta/Stoppa AC via IR** uses the existing `climate` entity. It does
+  not automatically change the smartplug. When the plug is explicitly
+  `off`, IR control buttons are disabled. If the plug is unavailable,
+  its control is disabled; IR remains available because plug state is unknown.
+
+Energy readings show actual states and units from three HA sensors, without
+calculated conversions or extrapolation. Unknown/unavailable readings appear
+as `—`. The values are already collected in HA; the new UI is read-only
+for these sensors.
+
+The following optional card properties have your actual entity IDs as
+**built-in defaults**, so your existing card YAML requires **no changes**:
+
+```yaml
+type: custom:woods-cortina-card
+entity: climate.wood_s_cortina_12k_duo
+name: Wood's Cortina
+power_entity: switch.woods_cortina_silent_12k_duo
+power_sensor: sensor.woods_cortina_silent_12k_duo_power
+energy_daily: sensor.woods_cortina_silent_12k_duo_energy_daily
+energy_monthly: sensor.woods_cortina_silent_12k_duo_energy_monthly
+```
+
+The values in these four fields may be overridden for another installation.
+The default, permanent JavaScript module URL stays
+`/woods_cortina/woods-cortina-card.js`, **without query parameters**.
 
 ## Implemented UI
 
@@ -54,7 +92,7 @@ resources:
   treatment, and an explicit **assumed state / no IR feedback** warning.
 - The card does not issue automatic commands or take over the thermostat.
 
-## Improvements in 2026.10.0b3
+## Previous UI improvements
 
 - Responsive sizing now follows the **actual card width**, not the browser's
   viewport width. Narrow cards stack the status and arrange +/− buttons on
@@ -68,8 +106,9 @@ resources:
   AC's state can still diverge.
 - If clicking in a dashboard **editor/preview** does nothing, exit edit mode
   and try in the normal dashboard view.
-- After updating HACS, change the Lovelace resource URL to include
-  `?v=2026.10.0b3` to invalidate a cached JavaScript copy and hard-refresh.
+- Keep the resource URL **unchanged** on HACS updates: `/woods_cortina/woods-cortina-card.js`.
+  Avoid query parameters such as `?v=...` because they can complicate resource registration.
+  Reload the dashboard after restarting Home Assistant; only try a browser hard-refresh if an old card is still shown.
 
 ## Important boundaries
 

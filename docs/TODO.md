@@ -34,7 +34,7 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 ## P1 — Better user experience (after core modes work)
 
-- [x] Premium Lovelace JS card in the HACS integration; narrow-layout and click feedback fixes included in `2026.10.0b3`.
+- [x] Premium Lovelace JS card in the HACS integration; narrow-layout and click feedback fixes included in `2026.10.0b4`.
 - [x] Hide/disable setpoint control in FAN and DRY **in the custom card**; retain the displayed last COOL target.
 - [ ] Review backend `climate.set_temperature` behavior in FAN/DRY separately; the generic HA thermostat and direct service calls still accept changes while those modes are active.
 - [ ] Consider optional external-temperature-aware *supervised* control.
@@ -42,7 +42,12 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
   and anti-short-cycle handling before enabling automation.
 
 - [ ] Visually verify the responsive UI and the climate service click flow on a real Home Assistant dashboard at narrow and wide widths. Browser editor mode may intercept clicks.
-- [ ] Confirm HACS resource reload and cache-busting URL after updating from b2 to b3.
+- [ ] Confirm HACS resource reload with the permanent URL `/woods_cortina/woods-cortina-card.js` (no `?v=` suffix).
+- [ ] Investigate state desynchronization when AC is switched with its original IR remote. User observed that UI/climate control worked after starting the physical AC with the remote; distinguish physical power state, power-button toggle semantics, and whether non-power IR frames are ignored while off.
+- [ ] Capture original POWER on/off behavior before changing `_apply` or HA `turn_on`/`turn_off` semantics. The remote is one-way and `requested_power` is optimistic; avoid presenting a toggle as a guaranteed state-setting action.
+
+- [x] Display measured power, daily and monthly energy, and independent smartplug mains power control in JS (with two-step mains-off confirmation).
+- [ ] Physical test of switch and energy entities in the user's HA; verify units, unavailable states, and safe power-down sequence. Do not automate switching off a running compressor.
 
 ## P2 — Deferred extras (not blocking basic HEAT/beta work)
 
@@ -61,7 +66,7 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 - IR is one-way. `requested_power`, target, and mode are assumed last
   requests, not appliance feedback.
-- The HACS beta `2026.10.0b3` adds the bundled Lovelace card, without HEAT enabled.
+- The HACS beta `2026.10.0b4` adds the bundled Lovelace card, without HEAT enabled.
 - Keep any speculative HEAT and Auto Clean experimentation on `dev`
   until hardware-backed tests pass.
 

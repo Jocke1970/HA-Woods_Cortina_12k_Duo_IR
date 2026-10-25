@@ -4,13 +4,27 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0b3";
+  const VERSION = "2026.10.0b4";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "dry", label: "Avfuktning", icon: "mdi:water-percent" },
     { value: "fan_only", label: "Fläkt", icon: "mdi:fan" },
   ];
   const FAN_NAMES = { low: "Låg", medium: "Medel", high: "Hög" };
+  const DEFAULT_SENSORS = Object.freeze({
+    power_entity: "switch.woods_cortina_silent_12k_duo",
+    power_sensor: "sensor.woods_cortina_silent_12k_duo_power",
+    energy_daily: "sensor.woods_cortina_silent_12k_duo_energy_daily",
+    energy_monthly: "sensor.woods_cortina_silent_12k_duo_energy_monthly",
+  });
+  const formatReading = (entity, maxDigits = 1) => {
+    if (!entity || ["unknown", "unavailable", ""].includes(entity.state)) return "—";
+    const number = Number(entity.state);
+    if (!Number.isFinite(number)) return "—";
+    const value = new Intl.NumberFormat("sv-SE", { maximumFractionDigits: maxDigits }).format(number);
+    const unit = entity.attributes?.unit_of_measurement;
+    return value + (typeof unit === "string" && unit ? " " + unit : "");
+  };
   const htmlEscape = (value) => String(value == null ? "" : value)
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
@@ -61,6 +75,23 @@
     .mode.active ha-icon{color:#35acd4}
     .mode:not(:disabled):hover{border-color:#79bcd6}
     .main-actions{display:flex;gap:10px;margin-top:15px}
+    .supply{margin-top:15px;padding:12px;border:1px solid var(--divider-color,rgba(140,160,185,.22));border-radius:14px;background:rgba(103,139,161,.06)}
+    .supply-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+    .supply-label{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.03em}
+    .supply-label ha-icon{--mdc-icon-size:17px;color:var(--secondary-text-color,#8fabb5)}
+    .supply-state{font-size:10px;color:var(--secondary-text-color,#a4b1bd)}
+    .supply-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center}
+    .watts-label,.energy-label{font-size:10px;color:var(--secondary-text-color,#8ba1af);line-height:1.35}
+    .watts-value{font-size:clamp(20px,8cqi,29px);line-height:1.25;font-weight:750;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+    .mains-button{min-height:42px;border:1px solid rgba(50,145,171,.45);background:rgba(39,124,156,.12);color:var(--primary-text-color,#fff);border-radius:11px;padding:8px 9px;display:flex;justify-content:center;align-items:center;gap:5px;font-size:11px;font-weight:700}
+    .mains-button ha-icon{--mdc-icon-size:18px}
+    .mains-button.is-on{border-color:rgba(214,127,93,.43);background:rgba(180,96,68,.09)}
+    .mains-button.confirm{background:rgba(201,111,67,.18);border-color:#db8550}
+    .energy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:11px}
+    .energy-cell{padding:9px 8px;background:rgba(128,159,178,.07);border:1px solid var(--divider-color,rgba(128,159,178,.14));border-radius:10px;min-width:0}
+    .energy-value{font-size:13px;font-weight:700;margin-top:3px;line-height:1.35;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+    .supply-warning{margin-top:9px;font-size:10px;color:var(--secondary-text-color,#a4b0b8);line-height:1.45}
+    .supply-warning.urgent{color:var(--error-color,#db876b);font-weight:600}
     .power{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;border-radius:12px;padding:10px 13px;flex:1;background:#277c9c;border:1px solid #277c9c;color:white;font-size:12px;font-weight:700}
     .power.off{background:rgba(128,149,165,.10);border-color:var(--divider-color,rgba(140,160,185,.22));color:var(--primary-text-color,#f0f6fa)}
     .power ha-icon{--mdc-icon-size:18px}
@@ -110,6 +141,8 @@
       this._busy = false;
       this._error = "";
       this._notice = "";
+      this._confirmMainsOff = false;
+      this._confirmMainsOffAt = 0;
       this._advanced = false;
       this.shadowRoot.addEventListener("toggle", (event) => {
         if (event.target && event.target.tagName === "DETAILS") this._advanced = event.target.open;
@@ -117,27 +150,45 @@
     }
 
     static getStubConfig() {
-      return { entity: "climate.wood_s_cortina_12k_duo", name: "Wood's Cortina" };
+      return { entity: "climate.wood_s_cortina_12k_duo", name: "Wood's Cortina", ...DEFAULT_SENSORS };
     }
 
     setConfig(config) {
       if (!config || typeof config.entity !== "string" || !config.entity.startsWith("climate.")) {
         throw new Error("Wood's Cortina: ange ett climate-entity-id i entity.");
       }
-      this._config = { entity: config.entity, name: config.name || "Wood's Cortina" };
+      const extras = {};
+      for (const [key, fallback] of Object.entries(DEFAULT_SENSORS)) {
+        const value = config[key] === undefined ? fallback : config[key];
+        const prefix = key === "power_entity" ? "switch." : "sensor.";
+        if (typeof value !== "string" || !value.startsWith(prefix)) {
+          throw new Error("Wood's Cortina: ogiltig entitet för " + key);
+        }
+        extras[key] = value;
+      }
+      this._config = { entity: config.entity, name: config.name || "Wood's Cortina", ...extras };
       this._render();
     }
 
     set hass(hass) {
       this._hass = hass;
+      if (this._confirmMainsOff &&
+          (this._mainsEntity()?.state !== "on" || Date.now() - this._confirmMainsOffAt > 15000)) {
+        this._confirmMainsOff = false;
+        this._confirmMainsOffAt = 0;
+      }
       this._render();
     }
 
-    getCardSize() { return this._advanced ? 8 : 5; }
-    getGridOptions() { return { columns: 6, min_columns: 3, rows: this._advanced ? 7 : 5 }; }
+    getCardSize() { return this._advanced ? 10 : 7; }
+    getGridOptions() { return { columns: 6, min_columns: 3, rows: this._advanced ? 9 : 7 }; }
 
     _entity() {
       return this._hass && this._config ? this._hass.states[this._config.entity] : null;
+    }
+
+    _mainsEntity() {
+      return this._hass && this._config ? this._hass.states[this._config.power_entity] : null;
     }
 
     _isActiveMode(entity) {
@@ -156,17 +207,24 @@
         return;
       }
       const attr = entity.attributes || {};
+      const mains = this._mainsEntity();
+      const mainsOnline = mains && (mains.state === "on" || mains.state === "off");
+      const mainsOff = mains?.state === "off";
+      const mainsOn = mains?.state === "on";
+      const watts = formatReading(this._hass.states[this._config.power_sensor], 1);
+      const daily = formatReading(this._hass.states[this._config.energy_daily], 2);
+      const monthly = formatReading(this._hass.states[this._config.energy_monthly], 2);
       const on = this._isActiveMode(entity);
       const cooling = on && entity.state === "cool";
-      const adjustable = cooling && !this._busy;
+      const adjustable = cooling && !this._busy && !mainsOff;
       const value = Number(attr.temperature);
       const target = Number.isFinite(value) ? value : 22;
       const room = attr.current_temperature == null ? "—" : fmt(attr.current_temperature) + " °C";
-      const fanAvailable = on && entity.state !== "dry" && !this._busy;
+      const fanAvailable = on && entity.state !== "dry" && !this._busy && !mainsOff;
       const modeButtons = MODES.filter((m) => this._allowed(entity, m.value))
         .map((m) => `<button class="mode ${entity.state === m.value ? "active" : ""}" type="button"
           data-action="mode" data-value="${m.value}" aria-pressed="${entity.state === m.value}"
-          ${this._busy ? "disabled" : ""}><ha-icon icon="${m.icon}"></ha-icon><span>${m.label}</span></button>`).join("");
+          ${this._busy || mainsOff ? "disabled" : ""}><ha-icon icon="${m.icon}"></ha-icon><span>${m.label}</span></button>`).join("");
       const fanButtons = ["low", "medium", "high"]
         .filter((fan) => !Array.isArray(attr.fan_modes) || attr.fan_modes.includes(fan))
         .map((fan) => `<button class="chip ${attr.fan_mode === fan ? "active" : ""}" type="button"
@@ -174,13 +232,13 @@
           ${!fanAvailable ? "disabled" : ""}>${FAN_NAMES[fan]}</button>`).join("");
       const swingButtons = ["off", "on"].map((v) =>
         `<button class="chip ${attr.swing_mode === v ? "active" : ""}" type="button" data-action="swing"
-        data-value="${v}" aria-pressed="${attr.swing_mode === v}" ${!on || this._busy ? "disabled" : ""}>${v === "on" ? "På" : "Av"}</button>`).join("");
+        data-value="${v}" aria-pressed="${attr.swing_mode === v}" ${!on || this._busy || mainsOff ? "disabled" : ""}>${v === "on" ? "På" : "Av"}</button>`).join("");
       const saver = attr.preset_mode === "energy_saver";
       const lastSent = attr.last_ir_sent_at ? new Date(attr.last_ir_sent_at) : null;
       const time = lastSent && !Number.isNaN(lastSent.valueOf())
         ? lastSent.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : "Aldrig";
-      const heroMode = on ? entity.state : "off";
-      const statusText = !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
+      const heroMode = mainsOff ? "off" : on ? entity.state : "off";
+      const statusText = mainsOff ? "Ström av" : !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
         entity.state === "dry" ? "Avfuktning" : "Fläkt";
       const disabledText = entity.state === "fan_only" || entity.state === "dry"
         ? "Temperaturinställning används inte i detta driftläge."
@@ -215,14 +273,38 @@
               </div>
             </div>
             ${!cooling ? `<div class="hint">${htmlEscape(disabledText)}</div>` : ""}
+            <div class="supply">
+              <div class="supply-head">
+                <span class="supply-label"><ha-icon icon="mdi:power-plug"></ha-icon> Strömförsörjning</span>
+                <span class="supply-state">${mainsOn ? "Ström på" : mainsOff ? "Ström av" : "Okänd status"}</span>
+              </div>
+              <div class="supply-top">
+                <div><div class="watts-label">Aktuell effekt</div><div class="watts-value">${htmlEscape(watts)}</div></div>
+                <button type="button" class="mains-button ${mainsOn ? "is-on" : ""} ${this._confirmMainsOff ? "confirm" : ""}"
+                  data-action="mains" aria-label="Smartplugg: ${mainsOn ? "bryt ström" : "slå på ström"}"
+                  ${!mainsOnline || this._busy ? "disabled" : ""}>
+                  <ha-icon icon="mdi:power-socket-eu"></ha-icon>
+                  ${this._confirmMainsOff ? "Bekräfta av" : mainsOn ? "Bryt ström" : "Slå på ström"}
+                </button>
+              </div>
+              <div class="energy-grid">
+                <div class="energy-cell"><div class="energy-label">Idag</div><div class="energy-value">${htmlEscape(daily)}</div></div>
+                <div class="energy-cell"><div class="energy-label">Denna månad</div><div class="energy-value">${htmlEscape(monthly)}</div></div>
+              </div>
+              <div class="supply-warning ${this._confirmMainsOff ? "urgent" : ""}">
+                ${this._confirmMainsOff
+                  ? "VARNING: Bryt inte ström medan AC:n arbetar. Stoppa via IR och låt apparaten stanna först. Tryck igen endast om du är säker."
+                  : "Strömknappen styr smartpluggen, inte AC:ns IR-läge."}
+              </div>
+            </div>
             <div class="section">
               <div class="section-title"><span>Driftläge</span><span>${saver && cooling ? "ENERGY SAVER" : ""}</span></div>
               <div class="modes">${modeButtons}</div>
             </div>
             <div class="main-actions">
               <button type="button" class="power ${on ? "" : "off"}" data-action="power"
-                ${this._busy ? "disabled" : ""}>
-                <ha-icon icon="mdi:power"></ha-icon>${on ? "Stäng av" : "Slå på"}
+                ${this._busy || mainsOff ? "disabled" : ""}>
+                <ha-icon icon="mdi:power"></ha-icon>${on ? "Stoppa AC via IR" : "Starta AC via IR"}
               </button>
             </div>
             <details ${this._advanced ? "open" : ""}>
@@ -237,7 +319,7 @@
                 <div class="row-buttons">
                   <button class="chip ${saver ? "active" : ""}" type="button" data-action="saver"
                     data-value="${saver ? "none" : "energy_saver"}" aria-pressed="${saver}"
-                    ${!cooling || this._busy ? "disabled" : ""}>${saver ? "Avaktivera" : "Aktivera"} Energy Saver</button>
+                    ${!cooling || this._busy || mainsOff ? "disabled" : ""}>${saver ? "Avaktivera" : "Aktivera"} Energy Saver</button>
                 </div>
                 <div class="fineprint">HEAT, Auto Clean och timer är ännu inte aktiverade.
                   IR-kommandon är enkelriktade; kortet visar senast begärt tillstånd.</div>
@@ -272,10 +354,40 @@
       if (!entity || !this._hass || entity.state === "unavailable" || entity.state === "unknown") return;
       const action = button.dataset.action;
       const value = button.dataset.value;
+      const mains = this._mainsEntity();
+      if (action !== "mains" && mains?.state === "off") {
+        this._error = "Smartpluggen är avstängd. Slå på strömmen innan IR-styrning.";
+        this._notice = "";
+        this._render();
+        return;
+      }
       const on = this._isActiveMode(entity);
       const attr = entity.attributes || {};
+      let domain = "climate";
       let service = "";
+      let targetId = this._config.entity;
       let data = {};
+      if (action === "mains") {
+        if (!mains || !["on", "off"].includes(mains.state)) return;
+        if (this._confirmMainsOff && Date.now() - this._confirmMainsOffAt > 15000) {
+          this._confirmMainsOff = false;
+          this._confirmMainsOffAt = 0;
+        }
+        if (mains.state === "on" && !this._confirmMainsOff) {
+          this._confirmMainsOff = true;
+          this._confirmMainsOffAt = Date.now();
+          this._error = "";
+          this._notice = "Bekräfta endast om AC:n har stoppats via IR och fått stanna.";
+          this._render();
+          return;
+        }
+        domain = "switch";
+        targetId = this._config.power_entity;
+        service = mains.state === "on" ? "turn_off" : "turn_on";
+      } else {
+        this._confirmMainsOff = false;
+        this._confirmMainsOffAt = 0;
+      }
       if (action === "power") {
         service = on ? "turn_off" : "turn_on";
       } else if (action === "mode" && this._allowed(entity, value)) {
@@ -302,13 +414,17 @@
         data = { preset_mode: value };
       }
       if (!service) return;
+      this._confirmMainsOff = false;
+      this._confirmMainsOffAt = 0;
       this._busy = true;
       this._error = "";
       this._notice = "Skickar begäran till Home Assistant…";
       this._render();
       try {
-        await this._hass.callService("climate", service, { entity_id: this._config.entity, ...data });
-        this._notice = "Kommandot accepterades av Home Assistant (ingen IR-kvittens).";
+        await this._hass.callService(domain, service, { entity_id: targetId, ...data });
+        this._notice = domain === "switch"
+          ? "Strömkommando skickat till smartpluggen (väntar på status från HA)."
+          : "Kommandot accepterades av Home Assistant (ingen IR-kvittens).";
       } catch (err) {
         this._notice = "";
         this._error = err?.message || "Kunde inte skicka kommandot.";
