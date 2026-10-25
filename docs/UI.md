@@ -1,20 +1,20 @@
-# Bundled Lovelace card — Wood's Cortina IR v0.1.0b2
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b3
 
 The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
 JavaScript dependency. Home Assistant serves its JavaScript from
 `custom_components/woods_cortina/www/woods-cortina-card.js` at the URL
-`/woods_cortina/woods-cortina-card.js`.
+`/woods_cortina/woods-cortina-card.js?v=2026.10.0b3`.
 
 ## Upgrade from b1 and load the card
 
 1. From the already-added HACS custom repository, choose beta
-   `v0.1.0b2` and download/update it.
+   `2026.10.0b3` and download/update it.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
    Home Assistant frontend) and add the new resource:
-   - URL: `/woods_cortina/woods-cortina-card.js`
+   - URL: `/woods_cortina/woods-cortina-card.js?v=2026.10.0b3`
    - Type: **JavaScript module**
 4. Hard-refresh the browser after registering the module
    (`Ctrl+Shift+R` on Linux).
@@ -36,7 +36,7 @@ instead of adding it through the UI:
 
 ```yaml
 resources:
-  - url: /woods_cortina/woods-cortina-card.js
+  - url: /woods_cortina/woods-cortina-card.js?v=2026.10.0b3
     type: module
 ```
 
@@ -53,6 +53,23 @@ resources:
 - Busy/error handling, button accessibility, missing/unavailable entity
   treatment, and an explicit **assumed state / no IR feedback** warning.
 - The card does not issue automatic commands or take over the thermostat.
+
+## Improvements in 2026.10.0b3
+
+- Responsive sizing now follows the **actual card width**, not the browser's
+  viewport width. Narrow cards stack the status and arrange +/− buttons on
+  their own row so none can be clipped.
+- Compact footer and shorter timestamp; the full last-send time is available
+  by hovering the footer stamp.
+- Buttons bind click handlers directly to their DOM elements after every
+  render; the card now displays sending progress, a Home Assistant service
+  acknowledgement, or an error.
+- **A HA service acknowledgement is not IR device feedback.** The physical
+  AC's state can still diverge.
+- If clicking in a dashboard **editor/preview** does nothing, exit edit mode
+  and try in the normal dashboard view.
+- After updating HACS, change the Lovelace resource URL to include
+  `?v=2026.10.0b3` to invalidate a cached JavaScript copy and hard-refresh.
 
 ## Important boundaries
 
