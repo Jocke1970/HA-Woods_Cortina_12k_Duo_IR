@@ -4,7 +4,7 @@ Original research and encoder: https://github.com/srednak/woods-protocol
 Copyright (c) 2026 Anders — MIT; see THIRD_PARTY_NOTICES.md.
 
 BroadLink IR packet wrapper follows the public python-broadlink protocol.
-No heating mode encoding is known. Do not guess a HEAT mode number.
+HEAT encoding is based on original-remote captures; requires RM4 hardware validation.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ class IRState:
     """Requested, not measured, AC state."""
 
     power: bool = False
-    mode: int = 0  # 0 Cool, 1 Dry, 2 Fan, 3 Energy Saver
+    mode: int = 0  # -1 HEAT (captured), 0 COOL, 1 DRY, 2 FAN, 3 energy saver
     temperature: int = 22
     fan: int = 0  # 0 Low, 1 Medium, 2 High
     swing: bool = False
@@ -49,8 +49,8 @@ def encode_frame(state: IRState, *, power_command: bool = False) -> bytes:
     temp, mode, fan = state.temperature, state.mode, state.fan
     if temp not in range(17, 31):
         raise ValueError("Temperature must be 17..30°C")
-    if mode not in range(4):
-        raise ValueError("Unsupported mode; heating is not implemented")
+    if mode not in (-1, 0, 1, 2, 3):
+        raise ValueError("Unsupported mode")
     if fan not in range(3):
         raise ValueError("Fan must be Low, Medium, or High")
 
@@ -60,15 +60,20 @@ def encode_frame(state: IRState, *, power_command: bool = False) -> bytes:
     b6 = ((fan + 1) << 4) | (mode + 1)
     if state.sleep and not power_command:
         b6 |= 0x80
+    # Real Duo HEAT state captures have B7 bit2 set; HEAT POWER ON/OFF
+    # captures do not. Upstream calls this bit 'auto_clean' in COOL.
+    # The meaning on Duo is unknown; we match observed frames but do not
+    # expose Auto Clean as a heat control.
+    bit2 = state.auto_clean or (mode == -1 and not power_command)
     b7 = 0x88 if power_command else 0x80
-    if state.auto_clean:
+    if bit2:
         b7 |= 0x04
     b8 = _baseline(temp) + (fan << 4) + mode
     if power_command:
         b8 += 8 if state.power else 6
     elif state.sleep:
         b8 += 0x80
-    if state.auto_clean:
+    if bit2:
         b8 += 4
     if state.swing:
         b8 += 1

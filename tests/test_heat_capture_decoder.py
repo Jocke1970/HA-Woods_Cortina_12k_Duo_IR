@@ -200,6 +200,29 @@ def test_heat_candidate_byte_deltas_match_original_22c_and_23c_captures():
         cool_frame[7] |= 0x04
         cool_frame[8] = (cool_frame[8] - 1 + 4) & 0xFF
         assert cool_frame.hex(" ").upper() == expected
-    # Non-research production encoder rejects the unsupported heat code.
-    with pytest.raises(ValueError):
-        codec.encode_frame(codec.IRState(power=True, mode=-1))
+    assert codec.encode_frame(codec.IRState(power=True, mode=-1, temperature=22)) == bytes.fromhex(
+        "55 62 00 0D 00 00 10 84 58"
+    )
+
+
+# Learned with original Wood's Duo remote on 2026-10-25 in HEAT at 22°C/LOW.
+HEAT_POWER_CAPTURES = {
+    "heat_power_off": (
+        "JgCYAAABgaQRERM+ERETPRIREz4REBQ+ERETPhQ9EhARERARERARDxIQEREREBEREA8SEBERERARERAQEREQERM+FD8QERM+EREREBEQERARERARERAREBEQERERDxIQERAREBERERAREBEPEhETPhIPEREREBEREz0SEBERERATPhEREREQDxIQFD8REBM+FD4REBNADxERAA0F",
+        "55 60 00 0D 00 00 10 88 5A",
+    ),
+    "heat_power_on": (
+        "JgCYAAABgaQRERM9EhAUPRIQFD0SEBM/EQ8VPhM/EBEREBEREz4RERAREREPEBIQEREREBEQEBEREBERERAREBQ+Ez4RERM/ERARDxIQERERERAPEhAREBIQERASDxEQEREREBEREQ8REREQERAUPRIQERASEBEQFD4REBEPEhETPhIPEREREBEQFD0SEBQ/Ez0UPhERERARAA0F",
+        "55 62 00 0D 00 00 10 88 5C",
+    ),
+}
+
+@pytest.mark.parametrize("name", HEAT_POWER_CAPTURES)
+def test_heat_power_capture_roundtrip(name):
+    learned, expected = HEAT_POWER_CAPTURES[name]
+    decoded = decode_woods_frame(broadlink_to_durations(learned))
+    assert decoded.hex(" ").upper() == expected
+    assert decoded == codec.encode_frame(
+        codec.IRState(power=name == "heat_power_on", mode=-1, temperature=22, fan=0),
+        power_command=True,
+    )

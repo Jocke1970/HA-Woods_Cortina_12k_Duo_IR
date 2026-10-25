@@ -57,3 +57,17 @@ def test_invalid_values():
         encode_frame(IRState(mode=4))
     with pytest.raises(ValueError):
         encode_frame(IRState(fan=3))
+
+
+def test_heat_captured_state_and_power_frames():
+    """Real original-remote HEAT / LOW / 22-23°C transmissions."""
+    heat22 = IRState(power=True, mode=-1, temperature=22)
+    assert encode_frame(heat22).hex(" ").upper() == "55 62 00 0D 00 00 10 84 58"
+    assert encode_frame(heat22, power_command=True).hex(" ").upper() == "55 62 00 0D 00 00 10 88 5C"
+    assert encode_frame(IRState(power=False, mode=-1, temperature=22), power_command=True).hex(" ").upper() == "55 60 00 0D 00 00 10 88 5A"
+    assert encode_frame(IRState(power=True, mode=-1, temperature=23)).hex(" ").upper() == "55 72 00 0E 00 00 10 84 69"
+
+def test_no_invalid_heat_mode_numbers():
+    import pytest
+    with pytest.raises(ValueError):
+        encode_frame(IRState(mode=-2))
