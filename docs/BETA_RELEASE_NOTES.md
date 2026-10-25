@@ -1,19 +1,43 @@
-# Wood's Cortina 12K Duo IR — v0.1.0b1
+# Wood's Cortina 12K Duo IR — v0.1.0b2 (beta)
 
-**First experimental beta — manual/supervised testing only**
+## New in this beta
 
-- Initial native Home Assistant `climate` entity, controlled through an existing BroadLink `remote` entity.
-- Dynamically generated 72-bit Wood's IR frames, wrapped as BroadLink `b64:` commands.
-- Cool, Dry, Fan, low/medium/high fan, target 17–30°C, swing and energy saver preset.
-- Optional external temperature sensor for **display only**; no automatic thermostat control.
-- On/off state, target, and mode are assumed last requests, **not confirmed AC feedback**.
-- Original IR research by **Anders**: [srednak/woods-protocol](https://github.com/srednak/woods-protocol), MIT (see `THIRD_PARTY_NOTICES.md`).
+- **Premium Lovelace JS card**, bundled directly with the HACS custom
+  integration at `/woods_cortina/woods-cortina-card.js`.
+- Responsive Swedish UI: current temperature, COOL setpoint (+/−),
+  COOL/DRY/FAN mode selectors, on/off, fan speeds, swing,
+  Energy Saver, collapsible advanced settings, clear optimistic-IR notice.
+- COOL-only setpoint controls in the new card; FAN and DRY intentionally
+  show the last target without offering adjustments.
+- Home Assistant static resource registration for the bundled card.
+  **One-time Lovelace resource setup is still required** (see
+  [UI guide](docs/UI.md) and [README](README.md)).
+- Actual BroadLink RM4 original-remote recordings preserved and tested:
+  verified COOL, DRY, candidate HEAT and ambiguous AUTO CLEAN.
+- Codec and frontend smoke checks in GitHub CI.
 
-**Known limitations / stop conditions**
+## Still experimental
 
-- Exact protocol compatibility with Wood's Cortina 12K **Duo** is unverified; the upstream remote's model is not identified.
-- **HEAT disabled**: no reliable IR mapping yet.
-- No unattended/automatic operation until live IR tests verify mode, temperature, power handling, and correct fail behavior.
-- Use the HACS custom repository entry, enable beta/pre-release, and choose `v0.1.0b1`. Never download from `dev`.
+- The verified path is HA → generated COOL IR → RM4 Mini → Wood's Duo AC.
+  Other function combinations and power transitions require user testing.
+- **HEAT remains disabled.** Although the mode byte appears to be 0x10,
+  safe power-on/off transitions and generation need real-hardware validation.
+- AUTO CLEAN, timer, and sleep are on the TODO list.
+- No automated temperature compensation; no AC state feedback.
+- Do not use for unattended frost protection or heating.
 
-**Initial test:** Select `remote.rm4_mini` as the transmitter. Start with Cool, 22°C, low fan. Verify the physical appliance responds correctly. Report any HA setup traceback or IR mismatch.
+## HACS upgrade
+
+Upgrade the already-added HACS custom repository to prerelease
+**`v0.1.0b2`**, restart HA, then register dashboard resource
+`/woods_cortina/woods-cortina-card.js` (type **JavaScript module**) and
+use this card:
+
+```yaml
+type: custom:woods-cortina-card
+entity: climate.wood_s_cortina_12k_duo
+name: Wood's Cortina
+```
+
+This beta continues to target HA 2026.10 and uses the user's existing
+BroadLink `remote.rm4_mini` integration. `main` stays untouched.

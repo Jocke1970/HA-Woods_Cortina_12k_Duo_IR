@@ -2,7 +2,7 @@
 
 **Experimental beta for supervised testing.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
 
-> No real-hardware validation has been completed. In particular, compatibility with the **Duo** remote and heating-mode encoding are unverified. Heat is deliberately not offered.
+> **Hardware test update (2026-10-25):** Generated COOL temperature changes from the HA `climate` entity have been confirmed on the physical Duo AC via RM4 Mini. Captured MODE transitions strongly suggest a HEAT encoding, but generated HEAT commands, power transitions, and other functions remain unverified. HEAT is deliberately not offered yet.
 
 ## Architecture
 
@@ -20,7 +20,7 @@ The IR protocol encoder is adapted from [srednak/woods-protocol](https://github.
 
 1. First configure the RM4 Mini with Home Assistant's official [BroadLink integration](https://www.home-assistant.io/integrations/broadlink/). Verify that a `remote.***` entity exists.
 2. In **HACS**, open the three-dot menu → **Custom repositories**. Add `https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR` as category **Integration**.
-3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `v0.1.0b1`. Do **not** install the default `main` branch or use `dev`.
+3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `v0.1.0b2`. Do **not** install the default `main` branch or use `dev`.
 4. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and search for **Wood's Cortina IR**.
 5. Choose BroadLink `remote.rm4_mini` and optionally a room-temperature sensor.
 6. Begin with a **supervised** IR test (Cool / 22°C / Low fan). Compare the result with the original remote. Do not enable automations until the signal is validated.
@@ -34,18 +34,31 @@ There is no need for the upstream ESPHome firmware. Install **only GitHub beta r
 - A Python 72-bit codec and BroadLink packet packing; power key uses a distinct IR frame.
 - Optimistic/assumed state and last-send metadata; no fabricated compressor/IR-reception status.
 - Unit tests against captured bytes documented in the source repository and packet invariants.
+- Bundled JS card with temperature +/- (COOL only), operating modes, power, fan, swing, and Energy Saver controls. Resource registration is manual; no separate JavaScript file copy or second HACS repository.
+
+## Dashboard card
+
+The JavaScript card is shipped inside the HACS integration and exposed at `/woods_cortina/woods-cortina-card.js`. Add this URL once in dashboard resources (type **JavaScript module**), then add a **Manual** card:
+
+```yaml
+type: custom:woods-cortina-card
+entity: climate.wood_s_cortina_12k_duo
+name: Wood's Cortina
+```
+
+See [docs/UI.md](docs/UI.md) for full instructions. The card never treats the optimistic IR state as confirmed AC feedback, and does not expose unverified HEAT or Auto Clean functionality.
 
 ## Not implemented / intentionally disabled
 
-- **Heat mode:** absent from the original reverse-engineered codec. Do not guess its IR value.
+- **Heat mode:** first original-remote captures strongly suggest B6=`0x10`/mode `-1`, but generated HEAT frames and power transitions have not been tested on the appliance. Keep disabled pending supervised validation.
 - Automatic room-temperature compensation, anti-short-cycle control, timers, sleep and auto clean in the HA UI.
 - Reading Wood's *internal* room sensor (IR is send-only).
 - Detecting changes made with the appliance's physical buttons or original remote.
-- Premium Lovelace card; planned as a separate JS module.
+- Built-in Wood's Cortina Lovelace JS card is included in the HACS integration. Add its dashboard resource once, as described in [docs/UI.md](docs/UI.md).
 - Stable/main release until supervised testing is complete. The beta is distributed as a GitHub prerelease through HACS.
 
 ## Development workflow
 
 `dev → beta → main`. No code will be merged to `main` until validated and reviewed. Run `python -m pytest -q` and `python -m compileall -q custom_components`.
 
-See [docs/IR_PROTOCOL.md](docs/IR_PROTOCOL.md) for the exact reused algorithm, BroadLink packing, assumptions, and the IR-test matrix.
+See [docs/UI.md](docs/UI.md) for the bundled dashboard UI, [docs/IR_PROTOCOL.md](docs/IR_PROTOCOL.md) for the IR encoding, [docs/HEAT_CAPTURE.md](docs/HEAT_CAPTURE.md) for real remote captures and unresolved HEAT behavior, and [docs/TODO.md](docs/TODO.md) for the prioritized roadmap.

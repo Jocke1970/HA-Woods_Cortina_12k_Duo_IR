@@ -1,0 +1,66 @@
+# Development TODO — Wood's Cortina 12K Duo IR
+
+Project workflow: **dev → beta → main**. Do not install `dev` directly;
+test tagged GitHub beta prereleases through HACS. Do not push experimental
+HEAT controls into `beta` before verifying their actual behavior on the AC.
+
+## P0 — Finish the basic climate engine
+
+- [x] RM4 Mini configured in HA as `remote.rm4_mini`.
+- [x] Original remote's COOL command learned and replayed successfully.
+- [x] Generated COOL target-temperature change physically confirmed on
+  Wood's Cortina 12K Duo (from `climate.wood_s_cortina_12k_duo`).
+- [x] Decode real original-remote MODE transitions into COOL, DRY, and HEAT.
+- [x] Candidate HEAT frame found from real HEAT transition at 22°C:
+  `55 62 00 0D 00 00 10 84 58`; at 23°C:
+  `55 72 00 0E 00 00 10 84 69`.
+- [ ] Verify HEAT power ON and power OFF frames using *original remote*
+  captures; ensure no accidental power toggle if HA's optimistic state
+  differs from the real AC.
+- [ ] Confirm HEAT at another fan speed and/or setpoint, preferably including
+  a fresh transition showing HEAT on the original remote's LCD.
+- [ ] Implement validated HEAT encoding and `HVACMode.HEAT` in `dev`,
+  adding capture-based tests; isolate the ambiguous B7 `0x04` flag rather
+  than calling it Auto Clean without independent validation.
+- [ ] Supervised physical tests: HEAT command acceptance, setpoint changes,
+  fan behavior, power transitions, and safe switching between COOL and HEAT.
+- [ ] Retain last COOL target when switching through FAN/DRY; do not send
+  pointless temperature-only frames while in those modes. Verify actual
+  remote/AC behavior before changing backend semantics.
+- [ ] Regression-test basic COOL/DRY/FAN/OFF, restore behavior, and failure
+  handling. No unattended automation while IR state is unconfirmed.
+- [ ] Review PR from `dev` to `beta` with green CI and user hardware
+  results, then release a HACS-installable prerelease.
+
+## P1 — Better user experience (after core modes work)
+
+- [x] Premium Lovelace JavaScript card bundled with the integration; released for initial UI testing in `v0.1.0b2`.
+- [x] Hide/disable setpoint control in FAN and DRY **in the custom card**; retain the displayed last COOL target.
+- [ ] Review backend `climate.set_temperature` behavior in FAN/DRY separately; the generic HA thermostat and direct service calls still accept changes while those modes are active.
+- [ ] Consider optional external-temperature-aware *supervised* control.
+  IR provides no actual appliance-state feedback, so plan failure/restart
+  and anti-short-cycle handling before enabling automation.
+
+## P2 — Deferred extras (not blocking basic HEAT/beta work)
+
+- [ ] **Auto Clean:** separate special-action state/command not verified.
+  Captured `auto_clean` gave the same nine bytes as HEAT 22°C. The icon
+  lit on the *remote's display*, but no clear cleaning operation was
+  observed on the physical appliance. Revisit with careful captures later.
+- [ ] **Timer:** remote IR timer settings, cancellation, countdown/UI,
+  and restoration behavior are not implemented.
+- [ ] **Sleep:** capture semantics and interactions with mode and power.
+- [ ] Review other optional extras only after basic heating, cooling, and
+  power behavior are solid. Existing swing and energy-saver features should
+  receive ordinary regression tests, not expanded features now.
+
+## Known limitations
+
+- IR is one-way. `requested_power`, target, and mode are assumed last
+  requests, not appliance feedback.
+- The HACS beta `v0.1.0b2` adds the bundled Lovelace card, without HEAT enabled.
+- Keep any speculative HEAT and Auto Clean experimentation on `dev`
+  until hardware-backed tests pass.
+
+See [HEAT_CAPTURE.md](HEAT_CAPTURE.md) for decoded user captures and protocol
+hypotheses.
