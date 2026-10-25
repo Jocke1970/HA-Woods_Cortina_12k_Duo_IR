@@ -16,8 +16,7 @@ including heating, mode and temperature changes, fan speeds and power.
   both expansion panels, 4 HVAC mode icons and fan-speed icons.
 - [x] Automated UI regressions verify relocated power control, separate
   switch/climate calls, state-dependent icon help and room/target markup.
-- [ ] Publish UI beta `2026.10.0b7` via HACS (`dev → beta`) and receive
-  owner's final visual/interaction acceptance before `main`.
+- [ ] Publish UI beta `2026.10.0b8` via HACS (`dev → beta`) and get owner's acceptance of compact OFF state, long-press confirmation, brand icon and responsive room temperature.
 - [ ] Before `main`, run a clean CI and review version, HACS metadata,
   bundled frontend resource, README and third-party notices.
 - [ ] Promote the accepted beta commit via reviewed PR `beta → main`.

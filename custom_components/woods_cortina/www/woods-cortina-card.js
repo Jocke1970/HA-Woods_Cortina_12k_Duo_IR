@@ -4,7 +4,7 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0b7";
+  const VERSION = "2026.10.0b8";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "heat", label: "Värme", icon: "mdi:radiator" },
@@ -61,6 +61,19 @@
     .hero[data-mode="dry"]{background:linear-gradient(130deg,#173445,#195665)}
     .hero[data-mode="fan_only"]{background:linear-gradient(130deg,#213c42,#245962)}
     .hero[data-mode="off"]{background:linear-gradient(130deg,#333d48,#424950)}
+    /* Compact standby: the upper tile is the complete visible card. */
+    .hero.compact{padding:clamp(12px,4cqi,17px)}
+    .hero.compact .hero-main,.hero.compact .hero-controls,.hero.compact .telemetry-note{display:none}
+    ha-card.compact .off-hide{display:none}
+    .hero.compact .head{align-items:center}
+    .hero.compact .name{margin-top:0}
+    .confirm-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:13px;padding-top:11px;border-top:1px solid rgba(255,255,255,.24)}
+    .confirm-strip .confirm-label{grid-column:1/-1;color:#fff0dc;font-size:11px;line-height:1.35}
+    .confirm-action,.confirm-cancel{min-height:36px;border-radius:9px;padding:6px;font-size:11px;font-weight:700;color:#fff}
+    .confirm-action{background:#b75b42;border:1px solid #ffb28d}
+    .confirm-cancel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3)}
+    .power-note{color:#d2e9f5;font-size:9px;line-height:1.25;text-align:center}
+
     .head{position:relative;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:10px}
     .brand{min-width:0;flex:1;max-width:100%}
     .eyebrow{font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:#bbd6e6;font-weight:700;overflow-wrap:anywhere}
@@ -84,8 +97,8 @@
     button:disabled{opacity:.32;cursor:not-allowed;filter:grayscale(.7)}
     .step{display:grid;place-items:center;min-height:42px;width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-size:26px;font-weight:300}
     .step:not(:disabled):hover{background:rgba(255,255,255,.23)}
-    .room{min-width:0;padding-left:clamp(7px,2.3cqi,13px);border-left:1px solid rgba(255,255,255,.25);align-self:end;padding-bottom:3px}
-    .room strong{display:block;margin-top:7px;font-size:clamp(15px,5cqi,20px);line-height:1.1;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .room{min-width:0;padding-left:clamp(7px,2.3cqi,13px);border-left:1px solid rgba(255,255,255,.25);align-self:center;padding-bottom:0;text-align:right}
+    .room strong{display:block;margin-top:5px;font-size:clamp(15px,4.8cqi,19px);line-height:1.1;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
     .telemetry-note{font-size:10px;line-height:1.4;color:#b8d7e7;margin-top:11px}
     .hint{font-size:11px;color:var(--secondary-text-color,#8d9da7);margin-top:10px;line-height:1.45}
     .hero-controls{position:relative;z-index:1;margin-top:19px;padding-top:15px;border-top:1px solid rgba(255,255,255,.19)}
@@ -169,6 +182,8 @@
       this._notice = "";
       this._confirmMainsOff = false;
       this._confirmMainsOffAt = 0;
+      this._powerPressStartedAt = 0;
+      this._suppressPowerClickUntil = 0;
       this._advanced = false;
       this._consumption = false;
       this.shadowRoot.addEventListener("toggle", (event) => {
@@ -210,7 +225,7 @@
       this._render();
     }
 
-    getCardSize() { return 7 + (this._advanced ? 2 : 0) + (this._consumption ? 2 : 0); }
+    getCardSize() { return !this._isActiveMode(this._entity()) || this._mainsEntity()?.state === "off" ? 2 : 7 + (this._advanced ? 2 : 0) + (this._consumption ? 2 : 0); }
     getGridOptions() { return { columns: 6, min_columns: 3, rows: this.getCardSize() }; }
 
     _entity() {
@@ -246,6 +261,7 @@
       const monthly = formatReading(this._hass.states[this._config.energy_monthly], 2);
       const physicalWatts = wattsReading(this._hass.states[this._config.power_sensor]);
       const on = this._isActiveMode(entity);
+      const compact = !on || mainsOff;
       const cooling = on && entity.state === "cool";
       const heating = on && entity.state === "heat";
       const adjustable = (cooling || heating) && !this._busy && !mainsOff;
@@ -287,6 +303,7 @@
       const powerDescription = mainsOff ? "Slå på huvudström" : mainsOn ?
         (on ? "Stoppa AC via IR" : "Starta AC via IR") : "Huvudström okänd";
       const powerAreaLabel = mainsOff ? "Huvudström" : mainsOn ? "AC" : "Okänd";
+      const powerHint = mainsOn && !on ? "Håll: huvudström" : "";
       const statusText = mainsOff ? "Ström av" : !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
         entity.state === "heat" ? "Värme aktiv" : entity.state === "dry" ? "Avfuktning" : "Fläkt";
       const disabledText = entity.state === "fan_only" || entity.state === "dry"
@@ -294,22 +311,23 @@
         : !on ? "Starta kyla eller värme för att ändra temperaturen." : "Temperaturen regleras av AC:ns egen termostat.";
       this.shadowRoot.innerHTML = `
         <style>${CSS}</style>
-        <ha-card>
+        <ha-card class="${compact ? "compact" : ""}">
           <div class="shell">
-            <div class="hero" data-mode="${htmlEscape(heroMode)}">
+            <div class="hero ${compact ? "compact" : ""}" data-mode="${htmlEscape(heroMode)}">
               <div class="head">
-                <div class="brand"><div class="eyebrow">KLIMATKONTROLL · IR</div>
+                <div class="brand">
                   <div class="name">${htmlEscape(this._config.name)}</div>
                   <span class="status ${on && !mainsOff ? "" : "off"}"><span class="dot"></span>${statusText}</span>
                 </div>
                 <div class="power-cluster">
                   <button type="button" class="power ${on && mainsOn ? "" : "off"}"
                     data-action="power" aria-label="${htmlEscape(powerDescription)}"
-                    title="${htmlEscape(powerDescription)}"
+                    title="${htmlEscape(powerDescription)}${mainsOn && !on ? " · Håll 1 sekund för huvudström" : ""}"
                     ${this._busy || !mainsOnline ? "disabled" : ""}>
                     <ha-icon icon="mdi:power"></ha-icon>
                   </button>
                   <span class="power-hint">${powerAreaLabel}</span>
+                  ${powerHint ? `<span class="power-note">${powerHint}</span>` : ""}
                 </div>
               </div>
               <div class="hero-main">
@@ -321,7 +339,7 @@
                     </div>
                   </div>
                   <div class="room">
-                    <div class="minor-caption">RUMSTEMPERATUR</div>
+                    <div class="minor-caption" title="Rumstemperatur">RUM</div>
                     <strong>${room}</strong>
                   </div>
                 </div>
@@ -350,7 +368,14 @@
                   ${this._confirmMainsOff ? '<div class="mains-warning">Kontrollera att AC:n verkligen har stannat. Tryck igen för att bryta huvudströmmen.</div>' : ""}
                 </div>
               </div>
+              ${this._confirmMainsOff && compact ? `
+                <div class="confirm-strip" role="group" aria-label="Bekräfta avstängning av huvudström">
+                  <span class="confirm-label">AC:n måste vara helt stoppad. Bryt huvudströmmen?</span>
+                  <button type="button" class="confirm-action" data-action="mains_off">Bekräfta</button>
+                  <button type="button" class="confirm-cancel" data-action="mains_cancel">Avbryt</button>
+                </div>` : ""}
             </div>
+            <div class="off-hide">
             ${!(cooling || heating) ? `<div class="hint">${htmlEscape(disabledText)}</div>` : ""}
             <details class="panel" data-panel="settings" ${this._advanced ? "open" : ""}>
               <summary>Fler inställningar</summary>
@@ -383,9 +408,10 @@
                 <div class="fineprint">Effekt och energi mäts av smartpluggen. AC:ns driftläge kommer från IR-kommandon utan återkoppling.</div>
               </div>
             </details>
+            </div>
             ${this._notice ? `<div class="notice" role="status" aria-live="polite">${htmlEscape(this._notice)}</div>` : ""}
             ${this._error ? `<div class="error" role="alert">${htmlEscape(this._error)}</div>` : ""}
-            <div class="bottom">
+            <div class="bottom off-hide">
               <span>RM4 Mini · ${htmlEscape(VERSION)}</span>
               <span class="stamp" title="${htmlEscape(lastSent ? lastSent.toLocaleString("sv-SE") : "Aldrig")}"><ha-icon icon="mdi:send" style="--mdc-icon-size:13px"></ha-icon> Senaste IR-begäran: ${htmlEscape(time)}</span>
             </div>
@@ -400,7 +426,48 @@
           event.stopPropagation();
           void this._handleClick({ currentTarget: button, target: button });
         });
+        if (button.dataset.action !== "power") return;
+        // A 900 ms hold arms the protected mains-off confirmation.
+        // Pointer and keyboard activation are treated equivalently.
+        button.addEventListener("pointerdown", (event) => {
+          if (event.button !== undefined && event.button !== 0) return;
+          this._powerPressStartedAt = Date.now();
+        });
+        button.addEventListener("pointerup", (event) => {
+          if (this._powerPressStartedAt &&
+              Date.now() - this._powerPressStartedAt >= 900) {
+            this._suppressPowerClickUntil = Date.now() + 800;
+            event.preventDefault?.();
+            void this._handlePowerHold();
+          }
+          this._powerPressStartedAt = 0;
+        });
+        button.addEventListener("pointercancel", () => { this._powerPressStartedAt = 0; });
+        button.addEventListener("pointerleave", () => { this._powerPressStartedAt = 0; });
+        button.addEventListener("contextmenu", (event) => event.preventDefault?.());
+        button.addEventListener("keydown", (event) => {
+          if (!["Enter", " "].includes(event.key)) return;
+          event.preventDefault?.();
+          if (!event.repeat && !this._powerPressStartedAt) this._powerPressStartedAt = Date.now();
+        });
+        button.addEventListener("keyup", (event) => {
+          if (!["Enter", " "].includes(event.key)) return;
+          event.preventDefault?.();
+          const held = this._powerPressStartedAt && Date.now() - this._powerPressStartedAt >= 900;
+          this._powerPressStartedAt = 0;
+          if (held) void this._handlePowerHold();
+          else void this._handleClick({ currentTarget: button, target: button });
+          this._suppressPowerClickUntil = Date.now() + 800;
+        });
       });
+    }
+
+    async _handlePowerHold() {
+      if (this._busy || this._confirmMainsOff) return;
+      // This always ARMS a confirmation; a long hold alone can never
+      // send switch.turn_off or skip the existing power/cooldown guards.
+      const target = { dataset: { action: "mains_off" }, disabled: false };
+      await this._handleClick({ currentTarget: target, target });
     }
 
     async _handleClick(event) {
@@ -412,6 +479,15 @@
       if (!entity || !this._hass || entity.state === "unavailable" || entity.state === "unknown") return;
       const action = button.dataset.action;
       const value = button.dataset.value;
+      if (action === "power" && Date.now() < this._suppressPowerClickUntil) return;
+      if (action === "mains_cancel") {
+        this._confirmMainsOff = false;
+        this._confirmMainsOffAt = 0;
+        this._error = "";
+        this._notice = "";
+        this._render();
+        return;
+      }
       const mains = this._mainsEntity();
       const mainsOff = mains?.state === "off";
       const mainsOn = mains?.state === "on";

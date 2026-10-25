@@ -20,7 +20,7 @@ The IR protocol encoder is adapted from [srednak/woods-protocol](https://github.
 
 1. First configure the RM4 Mini with Home Assistant's official [BroadLink integration](https://www.home-assistant.io/integrations/broadlink/). Verify that a `remote.***` entity exists.
 2. In **HACS**, open the three-dot menu → **Custom repositories**. Add `https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR` as category **Integration**.
-3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `2026.10.0b7`. Do **not** install the default `main` branch or use `dev`.
+3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `2026.10.0b8`. Do **not** install the default `main` branch or use `dev`.
 4. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and search for **Wood's Cortina IR**.
 5. Choose BroadLink `remote.rm4_mini` and optionally a room-temperature sensor.
 6. Begin with a **supervised** IR test (Cool / 22°C / Low fan). Compare the result with the original remote. Do not enable automations until the signal is validated.
@@ -62,8 +62,8 @@ Use the same permanent Lovelace resource URL across all releases—do **not** ad
 ## Versioning (from next release)
 
 Use calendar-based versions: `YYYY.MM.0bN`, with a numeric beta counter.
-For example, the **current** beta in October 2026 is `2026.10.0b7`
-(GitHub tag `v2026.10.0b7`), and the next would be `2026.10.0b8`.
+For example, the **current** beta in October 2026 is `2026.10.0b8`
+(GitHub tag `v2026.10.0b8`), and the next would be `2026.10.0b9`.
 For the first beta in a new month, restart from `b1`, e.g.
 `2026.11.0b1`. Keep the `0` patch component and two-digit month.
 
@@ -78,3 +78,25 @@ All future betas continue through **dev → beta → main**.
 `dev → beta → main`. No code will be merged to `main` until validated and reviewed. Run `python -m pytest -q` and `python -m compileall -q custom_components`.
 
 See [docs/UI.md](docs/UI.md) for the bundled dashboard UI, [docs/IR_PROTOCOL.md](docs/IR_PROTOCOL.md) for the IR encoding, [docs/HEAT_CAPTURE.md](docs/HEAT_CAPTURE.md) for real remote captures and unresolved HEAT behavior, and [docs/TODO.md](docs/TODO.md) for the prioritized roadmap.
+
+## Compact standby, power hold and brand icon (2026.10.0b8)
+
+When HA reports the AC OFF (or smartplug mains OFF), the card displays
+**only a compact top tile** with name, status and the single power icon.
+All setpoints, mode controls, advanced/energy panels and footer are hidden
+until the AC is started. Any error or mains-off confirmation remains visible.
+
+The top-right `mdi:power` control retains short-tap behavior: plug OFF →
+`switch.turn_on`; plug ON → `climate.turn_on/turn_off`. When plug is
+ON, hold power for **at least 900 ms** (pointer or Space/Enter keyboard)
+to request a **separate confirmation** to turn off the mains supply. A
+long-press never disconnects power immediately; mains-off requires
+climate OFF, valid ≤15 W measurement, at least 60 s after the last
+IR transmission, and user confirmation within 15 s. This is only a
+safety interlock: check the physical AC has stopped.
+
+The custom integration now packages the approved AC/IR illustration as
+`custom_components/woods_cortina/brand/icon.png` (256×256), using native HA 2026.3+ local integration
+branding. No external icon repository or resources are needed. The brand
+icon applies to the HA integration; the Lovelace power button stays
+`mdi:power`.

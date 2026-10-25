@@ -1,43 +1,40 @@
-# Wood's Cortina 12K Duo IR — 2026.10.0b7 (beta)
+# Wood's Cortina 12K Duo IR — 2026.10.0b8 (beta)
 
-## UI refinements
+## Compact off-state UI
 
-- The single primary power button now appears in the **upper-right**
-  corner of the hero and always uses `mdi:power`.
-- Its small caption shows **Huvudström** if mains is OFF, **AC** when
-  mains is ON, and **Okänd** if smartplug state is unavailable.
-  Tooltip and screen-reader text clarify whether the button next
-  activates mains, starts the AC, or stops the AC.
-- Room temperature appears beside the target setpoint in the same
-  horizontal row, with a smaller font and subtle divider.
-- Setpoint +/- buttons remain responsive at narrow widths.
-- The secondary **Bryt huvudström** action retains the existing
-  low-wattage, elapsed-time and double-confirmation safety guards.
-- HEAT/COOL/DRY/FAN modes, 3 MDI fan-speed buttons, energy readouts,
-  and both expanders are unchanged.
+- OFF now renders a compact Wood's Cortina tile with status and the
+  existing upper-right `mdi:power` control. Temperature widgets, HVAC
+  mode buttons, collapsible settings/consumption, and footer are hidden
+  until the AC is started.
+- Removes the unnecessary `KLIMATKONTROLL · IR` caption.
+- Aligns room temperature beside target using smaller right-aligned
+  `RUM` label.
 
-## Verified scope
+## Safer main-power long-press
 
-- No changes to Python IR codec, climate integration, or smartplug
-  service-routing logic.
-- Automated frontend tests cover header placement, icon/hints, side-by-side
-  temperatures and existing smartplug versus IR action dispatch.
-- User accepted all climate/HEAT/fan/power functions of b6 on the
-  real Wood's AC; b7's new UI still needs visual acceptance in HA.
+- **Short tap** on power is unchanged: plug OFF → switch ON, plug ON →
+  climate START/STOP via IR.
+- When plug is ON, **hold power ≥900 ms** to initiate mains-off. The hold
+  itself never sends `switch.turn_off`. A separate **Bekräfta** action
+  is required; **Avbryt** closes the confirmation.
+- The existing climate-OFF, valid measured ≤15 W, ≥60 seconds after the
+  last IR command, and confirmation-timeout guards remain mandatory.
+- Long-hold while AC is running or if readings are missing fails closed;
+  this is not a guarantee that the real compressor has stopped.
+
+## HA integration branding
+
+- Bundles the previously approved AC + IR waves artwork locally as
+  `custom_components/woods_cortina/brand/icon.png` (256 pixels)
+  following the HA 2026.3+ local brand convention.
+- No additional Lovelace resource, brand CDN, or HACS repository needed.
 
 ## Installation
 
-Update through HACS to beta `v2026.10.0b7`, restart Home Assistant,
-and reload the dashboard. The JS resource is unchanged:
+Install tagged prerelease `2026.10.0b8` through HACS; restart HA and
+reload the dashboard. Keep the original resource URL unchanged:
+`/woods_cortina/woods-cortina-card.js` (no `?v=`).
 
-`/woods_cortina/woods-cortina-card.js`
-
-Do not append `?v=` or install from `dev`. `main` remains untouched
-until the user approves the final UI.
-
-## Limitations
-
-IR is one-way; displayed climate state is optimistic.
-Do not rely on this for unattended frost protection or for verifying
-physical compressor shutdown before mains power disconnection.
-Auto Clean, Sleep and timer remain deferred.
+The backend and protocol are identical to the physically validated
+b6/b7 series. User verification of this UX is needed before promotion
+to `main`. IR state remains optimistic, so do not automate mains cut.

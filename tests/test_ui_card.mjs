@@ -36,6 +36,12 @@ const context = {
                   const cb = listeners.get('click');
                   if (cb && !this.disabled) cb({ stopPropagation() {} });
                 },
+                dispatch(eventName, props = {}) {
+                  const cb = listeners.get(eventName);
+                  if (cb && !this.disabled) cb({
+                    ...props, stopPropagation() {}, preventDefault() {},
+                  });
+                },
               };
             });
         },
@@ -98,7 +104,7 @@ test('registers the Lovelace card only once and protects config names', () => {
   const { card } = createCard();
   assert.ok(card.shadowRoot.innerHTML.includes('Test AC &lt;demo&gt;'));
   assert.ok(!card.shadowRoot.innerHTML.includes('Test AC <demo>'));
-  assert.ok(card.shadowRoot.innerHTML.includes('RUMSTEMPERATUR'));
+  assert.ok(card.shadowRoot.innerHTML.includes('title="Rumstemperatur"'));
   assert.throws(() => (new Card()).setConfig({ entity: 'sensor.not_climate' }));
 });
 
@@ -204,7 +210,7 @@ test('responsive styles use card container size, not browser window width', () =
   assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.ok(source.includes('2026.10.0b7'));
+  assert.ok(source.includes('2026.10.0b8'));
 });
 
 
@@ -219,6 +225,7 @@ test('power and energy entities are exposed in the default card config', () => {
   assert.ok(card.shadowRoot.innerHTML.includes('1,25 kWh'));
   assert.ok(card.shadowRoot.innerHTML.includes('18,35 kWh'));
   assert.ok(card.shadowRoot.innerHTML.includes('Strömförbrukning'));
+  assert.ok(card.shadowRoot.innerHTML.includes('class="off-hide"'));
   assert.ok(card.shadowRoot.innerHTML.includes('Huvudström på'));
   assert.ok(card.shadowRoot.innerHTML.includes('Stoppa AC via IR'));
   assert.ok(card.shadowRoot.innerHTML.includes('class="power-cluster"'));
@@ -357,13 +364,13 @@ test('unavailable mains switch disables main power but not other IR controls', a
 });
 
 test('panel sequence and mode icons live inside hero; energy is second expander', () => {
-  const { card } = stoppedCard();
+  const { card } = createCard('cool');
   const h = card.shadowRoot.innerHTML;
-  const hero = h.indexOf('class="hero"');
+  const hero = h.indexOf('class="hero ');
   const mode = h.indexOf('class="hero-modes"');
   const power = h.indexOf('class="power-cluster"');
   const mains = h.indexOf('class="hero-power-area"');
-  const heroClose = h.indexOf('class="hint"', mains);
+  const heroClose = h.indexOf('class="off-hide"', mains);
   const settings = h.indexOf('data-panel="settings"');
   const consumption = h.indexOf('data-panel="consumption"');
   assert.ok(hero >= 0 && power > hero && mode > power && mains > mode);
@@ -480,7 +487,7 @@ test('header contains exactly one mdi:power button in the upper right corner', (
     assert.ok(headerEnd > html.indexOf('class="power-cluster"'));
     assert.ok(html.indexOf('data-action="power"') < html.indexOf('class="hero-main"'));
     assert.ok(button[0].includes('icon="mdi:power"'));
-    assert.ok(button[0].includes('title="' + expectedTitle + '"'));
+    assert.ok(button[0].includes('title="' + expectedTitle));
     assert.ok(button[0].includes('aria-label="' + expectedTitle + '"'));
     assert.ok(html.includes('<span class="power-hint">' + expectedHint + '</span>'));
     if (mainsState === 'unavailable') assert.ok(button[0].includes('disabled'));
@@ -499,6 +506,8 @@ test('target and room temperatures share same hero row with smaller room reading
   assert.ok(stepper > room && modes > stepper);
   assert.ok(html.slice(container, stepper).includes('23</span>'));
   assert.ok(html.slice(room, stepper).includes('19,5 °C'));
+  assert.ok(html.includes('title="Rumstemperatur"'));
+  assert.ok(html.includes('>RUM</div>'));
   assert.ok(source.includes('.temperature-stats{display:grid;grid-template-columns:'));
   assert.ok(source.includes('@container (min-width:355px)'));
   const noTemp = createCard('off', 23, { current_temperature: null });
@@ -525,4 +534,104 @@ test('header power remains context-dependent, never chains switch and climate se
   assert.equal(calls[1][1], 'turn_on');
   assert.ok(!card.shadowRoot.innerHTML.includes('data-action="mains_off"') ||
     card._isActiveMode(card._entity()) === false);
+});
+
+
+test('off and disconnected modes show only the compact standby tile', () => {
+  for (const mains of ['on', 'off']) {
+    const { card } = createCard('off');
+    card._hass.states['switch.woods_cortina_silent_12k_duo'].state = mains;
+    card._render();
+    const html = card.shadowRoot.innerHTML;
+    assert.ok(html.includes('<ha-card class="compact">'));
+    assert.ok(html.includes('class="hero compact"'));
+    assert.ok(html.includes('class="off-hide"'));
+    assert.ok(source.includes('ha-card.compact .off-hide{display:none}'));
+    assert.ok(source.includes('.hero.compact .hero-main,.hero.compact .hero-controls'));
+    assert.ok(!html.includes('KLIMATKONTROLL · IR'));
+    assert.equal(card.getCardSize(), 2);
+    assert.ok(html.includes('data-action="power"'));
+  }
+  const { card } = createCard('heat');
+  assert.ok(card.shadowRoot.innerHTML.includes('class="hero "'));
+  assert.equal(card.getCardSize(), 7);
+});
+
+test('long power hold while AC is OFF arms visible confirmation without a switch call', async () => {
+  const { card, calls } = stoppedCard();
+  const button = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find(b => b.dataset.action === 'power');
+  button.dispatch('pointerdown', { button: 0 });
+  card._powerPressStartedAt = Date.now() - 1000;
+  button.dispatch('pointerup');
+  assert.equal(calls.length, 0, 'holding must not disconnect mains');
+  assert.equal(card._confirmMainsOff, true);
+  assert.ok(card.shadowRoot.innerHTML.includes('class="confirm-strip"'));
+  assert.ok(card.shadowRoot.innerHTML.includes('>Bekräfta</button>'));
+  assert.ok(card.shadowRoot.innerHTML.includes('>Avbryt</button>'));
+  // The native click following pointerup must not start the AC.
+  button.click();
+  assert.equal(calls.length, 0);
+});
+
+test('long hold cannot cut mains if climate is ON even with low watts', async () => {
+  const { card, calls } = createCard('cool', 22, {
+    last_ir_sent_at: new Date(Date.now() - 300000).toISOString(),
+  });
+  card._hass.states['sensor.woods_cortina_silent_12k_duo_power'].state = '1';
+  card._render();
+  const button = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find(b => b.dataset.action === 'power');
+  button.dispatch('pointerdown', { button: 0 });
+  card._powerPressStartedAt = Date.now() - 1100;
+  button.dispatch('pointerup');
+  button.click();
+  assert.equal(calls.length, 0);
+  assert.equal(card._confirmMainsOff, false);
+  assert.ok(card.shadowRoot.innerHTML.includes('Huvudström får bara brytas'));
+});
+
+test('confirmation requires separate explicit tap and can be cancelled', async () => {
+  const { card, calls } = stoppedCard();
+  await card._handlePowerHold();
+  await card._handleClick(click('mains_cancel'));
+  assert.equal(calls.length, 0);
+  assert.equal(card._confirmMainsOff, false);
+  await card._handlePowerHold();
+  assert.equal(card._confirmMainsOff, true);
+  await card._handleClick(click('mains_off'));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'switch');
+  assert.equal(calls[0][1], 'turn_off');
+  assert.equal(card._confirmMainsOff, false);
+});
+
+test('invalid meter value or recent IR command blocks the long hold', async () => {
+  for (const [watts, age] of [['75', 5], ['unavailable', 5], ['1', 0.1]]) {
+    const { card, calls } = stoppedCard(watts, age);
+    await card._handlePowerHold();
+    assert.equal(calls.length, 0);
+    assert.equal(card._confirmMainsOff, false);
+    assert.ok(card.shadowRoot.innerHTML.includes('Huvudström får bara brytas'));
+  }
+});
+
+test('keyboard hold is supported with Space; quick Enter activates normal power', async () => {
+  const { card, calls } = stoppedCard();
+  let button = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find(b => b.dataset.action === 'power');
+  button.dispatch('keydown', { key: ' ', repeat: false });
+  card._powerPressStartedAt = Date.now() - 1000;
+  button.dispatch('keyup', { key: ' ' });
+  assert.equal(calls.length, 0);
+  assert.equal(card._confirmMainsOff, true);
+  await card._handleClick(click('mains_cancel'));
+  card._suppressPowerClickUntil = 0;
+  button = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find(b => b.dataset.action === 'power');
+  button.dispatch('keydown', { key: 'Enter', repeat: false });
+  button.dispatch('keyup', { key: 'Enter' });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'climate');
+  assert.equal(calls[0][1], 'turn_on');
 });

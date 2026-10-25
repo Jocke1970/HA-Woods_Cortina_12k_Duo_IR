@@ -1,4 +1,4 @@
-# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b7
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b8
 
 The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
@@ -9,7 +9,7 @@ JavaScript dependency. Home Assistant serves its JavaScript from
 ## Upgrade from b1 and load the card
 
 1. From the already-added HACS custom repository, choose beta
-   `2026.10.0b7` and download/update it.
+   `2026.10.0b8` and download/update it.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
@@ -182,3 +182,28 @@ values remain unchanged. No external icon library is needed.
 - Both expanders, the four HVAC mode icons and the fan-speed icons
   remain in the previous order. The resource URL stays
   `/woods_cortina/woods-cortina-card.js` without `?v=`.
+
+## Compact standby and long-press (2026.10.0b8)
+
+With AC reported OFF (including mains OFF), only the small header tile
+remains visible: **Wood's Cortina**, assumed OFF status, and the `mdi:power`
+button with AC / Huvudström label. Target/room temperatures, +/- controls,
+mode buttons, advanced/energy expanders and footer return automatically
+when AC starts. Service feedback and confirmation messages remain visible
+while compact. The header no longer shows `KLIMATKONTROLL · IR`.
+
+A short power tap retains the old behavior. When mains is ON, a **900 ms
+long-press** (touch, mouse, or keyboard Space/Enter) opens the guarded
+confirmation for **Bryt huvudström**. Only a separate **Bekräfta** tap
+sends `switch.turn_off`. **Avbryt** closes without changing any entity.
+The existing checks—climate must be OFF, power ≤15 W, 60 s since last
+IR request, 15 s confirmation expiry—still apply in both the UI and
+service action handler. The live effect reading is not proof of compressor
+state; verify shutdown on the physical AC. Long-press with AC running
+cannot send mains-off.
+
+The room-temperature caption is shortened to **RUM** and right-aligned
+alongside the requested setpoint at narrow widths.
+
+The integration's own icon lives under `brand/icon.png` (256 pixels). It is shown by Home Assistant's local brand
+support (HA ≥2026.3) and are separate from `mdi:power` in the card.
