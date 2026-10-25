@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Wood's Cortina IR",
+        "description": "Choose an existing BroadLink remote and optionally a room temperature sensor.",
+        "data": {
+          "remote_entity": "BroadLink remote",
+          "temperature_entity": "External room temperature sensor (optional)"
+        }
+      }
+    }
+  }
+}
