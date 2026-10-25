@@ -420,3 +420,39 @@ test('HEAT card mode layout has 2 columns when narrow and 4 when wide', () => {
   assert.ok(source.includes('.hero-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('.hero-modes{grid-template-columns:repeat(4,minmax(0,1fr))}'));
 });
+
+
+test('fan icons replace labels while preserving Swedish accessible names', () => {
+  const { card } = createCard('cool', 22, { fan_mode: 'medium' });
+  const markup = card.shadowRoot.innerHTML;
+  for (const [fan, icon, label] of [
+    ['low', 'mdi:fan-speed-1', 'Låg'],
+    ['medium', 'mdi:fan-speed-2', 'Medel'],
+    ['high', 'mdi:fan-speed-3', 'Hög'],
+  ]) {
+    const match = markup.match(new RegExp('<button[^>]*data-action="fan"[^>]*data-value="' +
+      fan + '"[^>]*>[\\s\\S]*?</button>'));
+    assert.ok(match, 'fan speed button exists: ' + fan);
+    assert.ok(match[0].includes('icon="' + icon + '"'));
+    assert.ok(match[0].includes('aria-label="Fläkthastighet: ' + label + '"'));
+    assert.ok(match[0].includes('title="' + label + '"'));
+    assert.ok(match[0].includes('aria-pressed="' + (fan === 'medium') + '"'));
+    assert.ok(!/>\s*(Låg|Medel|Hög)\s*<\/button>/.test(match[0]));
+  }
+});
+
+test('icon fan controls still send HA climate service and disable in DRY', async () => {
+  const { card, calls } = createCard('cool', 22);
+  for (const fan of ['medium', 'high', 'low']) {
+    const button = card.shadowRoot.querySelectorAll('button[data-action]')
+      .find((b) => b.dataset.action === 'fan' && b.dataset.value === fan);
+    assert.ok(button);
+    assert.equal(button.disabled, false);
+    await card._handleClick(click('fan', fan));
+  }
+  assert.deepEqual(calls.map((c) => c[1]), ['set_fan_mode', 'set_fan_mode', 'set_fan_mode']);
+  assert.deepEqual(calls.map((c) => c[2].fan_mode), ['medium', 'high', 'low']);
+  const dry = createCard('dry');
+  assert.equal(dry.card.shadowRoot.querySelectorAll('button[data-action]')
+    .find((b) => b.dataset.action === 'fan').disabled, true);
+});

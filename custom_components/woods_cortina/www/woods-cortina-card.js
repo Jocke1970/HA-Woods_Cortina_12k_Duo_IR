@@ -12,6 +12,11 @@
     { value: "fan_only", label: "Fläkt", icon: "mdi:fan" },
   ];
   const FAN_NAMES = { low: "Låg", medium: "Medel", high: "Hög" };
+  const FAN_ICONS = {
+    low: "mdi:fan-speed-1",
+    medium: "mdi:fan-speed-2",
+    high: "mdi:fan-speed-3",
+  };
   // Secondary guard only: physical compressor feedback is not available via IR.
   const MAINS_OFF_MAX_WATTS = 15;
   const MAINS_OFF_COOLDOWN_MS = 60000;
@@ -110,6 +115,8 @@
     .chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
     .chip{min-width:0;border-radius:10px;border:1px solid var(--divider-color,rgba(140,160,185,.25));background:transparent;color:var(--primary-text-color,#f7fbfe);min-height:37px;padding:6px 4px;font-size:11px;overflow-wrap:anywhere}
     .chip.active{color:#1d98c0;border-color:#3a9fc4;background:rgba(49,160,202,.10);font-weight:700}
+    .fan-chip{display:flex;align-items:center;justify-content:center;min-height:43px}
+    .fan-chip ha-icon{--mdc-icon-size:25px}
     .row-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
     .row-title{font-size:11px;color:var(--secondary-text-color,#96a6b7);margin:15px 0 8px}
     .fineprint{font-size:10.5px;color:var(--secondary-text-color,#9bacb9);line-height:1.5;padding:11px 2px 1px}
@@ -257,9 +264,10 @@
           ${this._busy || mainsOff ? "disabled" : ""}><ha-icon icon="${m.icon}"></ha-icon><span>${m.label}</span></button>`).join("");
       const fanButtons = ["low", "medium", "high"]
         .filter((fan) => !Array.isArray(attr.fan_modes) || attr.fan_modes.includes(fan))
-        .map((fan) => `<button class="chip ${attr.fan_mode === fan ? "active" : ""}" type="button"
+        .map((fan) => `<button class="chip fan-chip ${attr.fan_mode === fan ? "active" : ""}" type="button"
           data-action="fan" data-value="${fan}" aria-pressed="${attr.fan_mode === fan}"
-          ${!fanAvailable ? "disabled" : ""}>${FAN_NAMES[fan]}</button>`).join("");
+          aria-label="Fläkthastighet: ${FAN_NAMES[fan]}" title="${FAN_NAMES[fan]}"
+          ${!fanAvailable ? "disabled" : ""}><ha-icon icon="${FAN_ICONS[fan]}"></ha-icon></button>`).join("");
       const swingButtons = ["off", "on"].map((v) =>
         `<button class="chip ${attr.swing_mode === v ? "active" : ""}" type="button" data-action="swing"
         data-value="${v}" aria-pressed="${attr.swing_mode === v}" ${!on || this._busy || mainsOff ? "disabled" : ""}>${v === "on" ? "På" : "Av"}</button>`).join("");
