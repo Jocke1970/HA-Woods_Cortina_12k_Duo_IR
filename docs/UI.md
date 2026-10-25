@@ -1,4 +1,4 @@
-# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b5
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b6
 
 The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
@@ -9,7 +9,7 @@ JavaScript dependency. Home Assistant serves its JavaScript from
 ## Upgrade from b1 and load the card
 
 1. From the already-added HACS custom repository, choose beta
-   `2026.10.0b5` and download/update it.
+   `2026.10.0b6` and download/update it.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
@@ -130,17 +130,32 @@ and has **no version parameter**.
 
 ## Important boundaries
 
-- **HEAT is not yet implemented**, despite promising original-remote
-  captures. It will be added only after supervised real-device validation.
+- **HEAT is available for supervised testing in b6.** The learned
+  original-remote HEAT POWER ON/OFF commands worked when replayed through
+  RM4 Mini. Generated heating commands and setpoint/fan combinations
+  still require real-device tests; no unattended automation.
 - AUTO CLEAN / TIMER / SLEEP remain in the TODO.
 - Basic remote IR is one-way; displayed mode and power reflect the
   last HA request and can diverge from the physical AC.
 - Other Home Assistant dashboards or service calls can still alter
   the target temperature while FAN/DRY are selected. The visual control
-  restriction applies to this custom card only in b2.
+  restriction applies to this custom card only.
 - Static resource registration is intentionally **manual** rather
   than writing to a user's Lovelace resources automatically. If you
   update the integration later, refresh the browser to clear the module.
 
 If the dashboard shows `Custom element doesn't exist`, confirm the
 resource URL returns JavaScript after HA restart and refresh the browser.
+
+
+## HEAT beta & fan buttons (2026.10.0b6)
+
+HEAT uses the `mdi:radiator` icon in the hero. Its temperature controls
+are active while heating, with a 2×2 grid on narrow cards and four
+columns on wider cards. Energy Saver remains COOL-only.
+
+The three fläkthastighet buttons now show built-in Home Assistant icons
+`mdi:fan-speed-1`, `mdi:fan-speed-2` and `mdi:fan-speed-3`,
+without visible Låg/Medel/Hög words. Accessible Swedish button names,
+hover titles, selection state and `climate.set_fan_mode` service
+values remain unchanged. No external icon library is needed.

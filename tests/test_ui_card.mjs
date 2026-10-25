@@ -75,7 +75,7 @@ function createCard(state = 'cool', temperature = 22, attrs = {}) {
         attributes: {
           temperature,
           current_temperature: 20.5,
-          hvac_modes: ['off', 'cool', 'dry', 'fan_only'],
+          hvac_modes: ['off', 'cool', 'heat', 'dry', 'fan_only'],
           fan_modes: ['low', 'medium', 'high'],
           fan_mode: 'low',
           min_temp: 17, max_temp: 30,
@@ -131,11 +131,15 @@ test('mode, swing, fan and power delegate to HA climate services', async () => {
   ]);
 });
 
-test('HEAT actions are never exposed or sent by this beta', async () => {
+test('HEAT mode is available in unreleased dev and calls climate service', async () => {
   const { card, calls } = createCard();
+  assert.ok(card.shadowRoot.innerHTML.includes('data-value="heat"'));
+  assert.ok(card.shadowRoot.innerHTML.includes('mdi:radiator'));
   await card._handleClick(click('mode', 'heat'));
-  assert.equal(calls.length, 0);
-  assert.ok(!card.shadowRoot.innerHTML.includes('data-value="heat"'));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'climate');
+  assert.equal(calls[0][1], 'set_hvac_mode');
+  assert.equal(calls[0][2].hvac_mode, 'heat');
 });
 
 test('unavailable entity is handled without emitting commands', async () => {
@@ -200,7 +204,7 @@ test('responsive styles use card container size, not browser window width', () =
   assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.ok(source.includes('2026.10.0b5'));
+  assert.ok(source.includes('2026.10.0b6'));
 });
 
 
@@ -391,4 +395,64 @@ test('external mains status change clears stale confirmation', async () => {
   card.hass = ha;
   assert.equal(card._confirmMainsOff, false);
   assert.ok(card.shadowRoot.innerHTML.includes('Huvudström av'));
+});
+
+
+test('new HEAT in dev invokes correct climate mode and setpoint', async () => {
+  const { card, calls } = createCard('cool', 22);
+  assert.ok(card.shadowRoot.innerHTML.includes('mdi:radiator'));
+  assert.ok(card.shadowRoot.innerHTML.includes('data-value="heat"'));
+  await card._handleClick(click('mode', 'heat'));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'climate');
+  assert.equal(calls[0][1], 'set_hvac_mode');
+  assert.equal(calls[0][2].hvac_mode, 'heat');
+  const heating = createCard('heat', 22);
+  assert.ok(heating.card.shadowRoot.innerHTML.includes('Värme aktiv'));
+  await heating.card._handleClick(click('temp', '1'));
+  assert.equal(heating.calls[0][1], 'set_temperature');
+  assert.equal(heating.calls[0][2].temperature, 23);
+  await heating.card._handleClick(click('saver', 'energy_saver'));
+  assert.equal(heating.calls.length, 1, 'Energy saver must be blocked in HEAT');
+});
+
+test('HEAT card mode layout has 2 columns when narrow and 4 when wide', () => {
+  assert.ok(source.includes('.hero-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'));
+  assert.ok(source.includes('.hero-modes{grid-template-columns:repeat(4,minmax(0,1fr))}'));
+});
+
+
+test('fan icons replace labels while preserving Swedish accessible names', () => {
+  const { card } = createCard('cool', 22, { fan_mode: 'medium' });
+  const markup = card.shadowRoot.innerHTML;
+  for (const [fan, icon, label] of [
+    ['low', 'mdi:fan-speed-1', 'Låg'],
+    ['medium', 'mdi:fan-speed-2', 'Medel'],
+    ['high', 'mdi:fan-speed-3', 'Hög'],
+  ]) {
+    const match = markup.match(new RegExp('<button[^>]*data-action="fan"[^>]*data-value="' +
+      fan + '"[^>]*>[\\s\\S]*?</button>'));
+    assert.ok(match, 'fan speed button exists: ' + fan);
+    assert.ok(match[0].includes('icon="' + icon + '"'));
+    assert.ok(match[0].includes('aria-label="Fläkthastighet: ' + label + '"'));
+    assert.ok(match[0].includes('title="' + label + '"'));
+    assert.ok(match[0].includes('aria-pressed="' + (fan === 'medium') + '"'));
+    assert.ok(!/>\s*(Låg|Medel|Hög)\s*<\/button>/.test(match[0]));
+  }
+});
+
+test('icon fan controls still send HA climate service and disable in DRY', async () => {
+  const { card, calls } = createCard('cool', 22);
+  for (const fan of ['medium', 'high', 'low']) {
+    const button = card.shadowRoot.querySelectorAll('button[data-action]')
+      .find((b) => b.dataset.action === 'fan' && b.dataset.value === fan);
+    assert.ok(button);
+    assert.equal(button.disabled, false);
+    await card._handleClick(click('fan', fan));
+  }
+  assert.deepEqual(calls.map((c) => c[1]), ['set_fan_mode', 'set_fan_mode', 'set_fan_mode']);
+  assert.deepEqual(calls.map((c) => c[2].fan_mode), ['medium', 'high', 'low']);
+  const dry = createCard('dry');
+  assert.equal(dry.card.shadowRoot.querySelectorAll('button[data-action]')
+    .find((b) => b.dataset.action === 'fan').disabled, true);
 });

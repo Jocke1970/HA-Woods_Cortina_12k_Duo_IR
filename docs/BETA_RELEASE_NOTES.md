@@ -1,34 +1,40 @@
-# Wood's Cortina 12K Duo IR — 2026.10.0b5 (beta)
+# Wood's Cortina 12K Duo IR — 2026.10.0b6 (beta)
 
-## UI redesign
+## HEAT for supervised testing
 
-- Moves mode buttons **into the top hero**, with visually distinct
-  MDI snowflake / water-percent / fan icons.
-- A single **primary power** button has contextual behavior:
-  - smartplug OFF → `switch.turn_on`, **without** AC IR startup;
-  - smartplug ON → `climate.turn_on` or `climate.turn_off`.
-- A small **Bryt huvudström** action is available only while the climate
-  entity reports OFF. It is never displayed while climate reports ON.
-  Before switch-off, the UI requires measured draw ≤15 W (a valid W/kW
-  reading), ≥60 s since the last IR request, and two clicks within 15 s.
-- **Fler inställningar** expander appears first.
-- **Strömförbrukning** expander follows, containing live W and daily and
-  monthly kWh metrics plus smartplug supply state.
-- Existing entity IDs and card YAML are unchanged.
+- The owner confirmed that **both** learned original-remote HEAT POWER
+  OFF and POWER ON commands worked on the physical AC when replayed
+  through RM4 Mini.
+- HEAT is available in Home Assistant's climate modes and in the custom
+  card (radiator icon, temperature +/-).
+- Codec reproduces four real recorded HEAT frames byte-for-byte:
+  state 22°C and 23°C, POWER OFF and POWER ON at 22°C.
+- The newly generated HEAT path via the climate integration still needs
+  physical testing for temperature changes, mode changes and fan speeds.
 
-## Safety caveats
+## Lovelace card
 
-Home Assistant tracks IR commands optimistically. Even the new
-power guard cannot confirm that the physical compressor has stopped
-if another remote was used or power readings are stale. The user must
-visually verify the AC is off before disconnecting its mains supply.
-This beta has no automatic switching between mains and AC control.
+- Three fan buttons now use **mdi:fan-speed-1**, **mdi:fan-speed-2**
+  and **mdi:fan-speed-3** instead of Low/Medium/High text.
+- Swedish accessible labels, hover tooltips and on/off/selected behavior
+  of the original climate fan controls are preserved.
+- The four modes remain in the hero; smartplug and energy sections and
+  their safety guards are unchanged.
 
-## Deployment
+## Important limitations
 
-Upgrade through HACS to prerelease `v2026.10.0b5` and restart HA.
-Keep the existing Lovelace resource URL exactly
-`/woods_cortina/woods-cortina-card.js` (no `?v=` suffix).
-Reload the dashboard; do not install from `dev`.
+- IR is one-way: all HA states are **optimistic requests**, not confirmed
+  physical appliance status. Never rely on these for mains power safety.
+- No unattended heating/frost protection or automated compressor control
+  while generated HEAT commands are still being manually validated.
+- Auto Clean, Sleep and Timer remain deferred.
+- The `0x04` flag in the HEAT state frame remains semantically unknown.
 
-HEAT, AUTO CLEAN, timers and sleep remain unavailable.
+## HACS
+
+Download prerelease `v2026.10.0b6` through HACS and restart Home Assistant.
+Keep the existing JS resource URL exactly:
+
+`/woods_cortina/woods-cortina-card.js`
+
+Do not add `?v=` or install `dev` directly.

@@ -19,8 +19,8 @@ from .ir_codec import IRState, broadlink_command
 
 _LOGGER = logging.getLogger(__name__)
 
-MODE_TO_HVAC = {0: HVACMode.COOL, 1: HVACMode.DRY, 2: HVACMode.FAN_ONLY, 3: HVACMode.COOL}
-HVAC_TO_MODE = {HVACMode.COOL: 0, HVACMode.DRY: 1, HVACMode.FAN_ONLY: 2}
+MODE_TO_HVAC = {-1: HVACMode.HEAT, 0: HVACMode.COOL, 1: HVACMode.DRY, 2: HVACMode.FAN_ONLY, 3: HVACMode.COOL}
+HVAC_TO_MODE = {HVACMode.COOL: 0, HVACMode.HEAT: -1, HVACMode.DRY: 1, HVACMode.FAN_ONLY: 2}
 FAN_NAMES = ("low", "medium", "high")
 
 
@@ -39,7 +39,7 @@ class WoodsCortinaClimate(ClimateEntity, RestoreEntity):
     _attr_min_temp = MIN_TEMP
     _attr_max_temp = MAX_TEMP
     _attr_target_temperature_step = 1
-    _attr_hvac_modes = [HVACMode.OFF, HVACMode.COOL, HVACMode.DRY, HVACMode.FAN_ONLY]
+    _attr_hvac_modes = [HVACMode.OFF, HVACMode.COOL, HVACMode.HEAT, HVACMode.DRY, HVACMode.FAN_ONLY]
     _attr_fan_modes = list(FAN_NAMES)
     _attr_swing_modes = ["off", "on"]
     _attr_preset_modes = ["none", "energy_saver"]
@@ -100,7 +100,7 @@ class WoodsCortinaClimate(ClimateEntity, RestoreEntity):
                 mode = int(attrs.get("requested_mode_code", 0))
                 temp = int(attrs.get("temperature", 22))
                 fan = FAN_NAMES.index(attrs.get("fan_mode", "low"))
-                if 0 <= mode <= 3 and 17 <= temp <= 30:
+                if -1 <= mode <= 3 and 17 <= temp <= 30:
                     self._state = IRState(
                         power=attrs.get("requested_power") is True,
                         mode=mode,
@@ -170,7 +170,7 @@ class WoodsCortinaClimate(ClimateEntity, RestoreEntity):
                 await self._apply(replace(self._state, power=False), power_command=True)
             return
         if hvac_mode not in HVAC_TO_MODE:
-            raise HomeAssistantError("Unsupported HVAC mode; heating is not implemented")
+            raise HomeAssistantError("Unsupported HVAC mode")
         new_state = replace(self._state, power=True, mode=HVAC_TO_MODE[hvac_mode])
         await self._apply(new_state, power_command=not self._state.power)
 
@@ -202,5 +202,7 @@ class WoodsCortinaClimate(ClimateEntity, RestoreEntity):
     async def async_set_preset_mode(self, preset_mode):
         if preset_mode not in ("none", "energy_saver"):
             raise HomeAssistantError("Unsupported preset")
+        if preset_mode == "energy_saver" and self._state.mode == -1:
+            raise HomeAssistantError("Energy Saver is not available while heating")
         mode = 3 if preset_mode == "energy_saver" else (0 if self._state.mode == 3 else self._state.mode)
         await self._apply(replace(self._state, mode=mode))

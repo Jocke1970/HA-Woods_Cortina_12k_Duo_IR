@@ -1,7 +1,10 @@
 # HEAT reverse engineering — Wood's Cortina 12K Duo
 
-**HEAT is deliberately unavailable in the HA climate integration until
-validated original-remote captures have been decoded and verified on the AC.**
+**Current result:** The original-remote HEAT POWER OFF and ON commands
+were both successfully replayed through RM4 Mini on the physical Wood's Duo
+(user-confirmed). The encoder matches all captured HEAT frames.
+HEAT can now enter **supervised beta 2026.10.0b6**; the historical
+recording instructions below remain for reference.
 
 ## Reason for new captures
 
@@ -13,6 +16,84 @@ mode might use B6 low nibble `0x5` (with low-fan `0x15`), but this is
 
 The Duo model supports heating, according to the manufacturer's specifications.
 We can learn actual IR messages using the already-configured BroadLink RM4 Mini.
+
+## Next supervised test: original HEAT POWER OFF / POWER ON captures
+
+**Status:** Mode selection into HEAT (B6=`0x10`, B7=`0x84`, B8=`0x58` at
+22°C) is strongly supported by real remote captures. The separate power
+key has not yet been observed in HEAT. The current `climate` entity **must
+not** enable `HVACMode.HEAT` without validating power transitions.
+
+The BroadLink receiver is `remote.rm4_mini`. Keep the smartplug mains
+**ON** throughout these tests; do not cut physical power as part of this
+capture. Supervise the AC and let any built-in compressor protection or
+shutdown routine finish normally.
+
+### Capture A — HEAT power OFF
+
+1. Use the *original Wood's remote* to select HEAT, 22°C, LOW. Ensure the
+   **physical AC is ON**, not merely the remote's LCD icon.
+2. In Home Assistant **Developer tools → Actions**, prepare:
+   ```yaml
+   action: remote.learn_command
+   target:
+     entity_id: remote.rm4_mini
+   data:
+     device: woods_heat_research
+     command: heat_power_off
+     command_type: ir
+   ```
+3. Start learning. Aim the original remote at RM4 Mini and press the
+   original remote's **POWER** button exactly once to stop the AC.
+4. Check the AC's own display/power state. If unsure, note the result
+   instead of repeatedly toggling power.
+
+### Capture B — HEAT power ON
+
+1. Confirm the physical AC is now OFF **but mains remains ON**. The
+   original remote must still be configured for HEAT, 22°C, LOW.
+2. Run the same `remote.learn_command`, this time with:
+   ```yaml
+   action: remote.learn_command
+   target:
+     entity_id: remote.rm4_mini
+   data:
+     device: woods_heat_research
+     command: heat_power_on
+     command_type: ir
+   ```
+3. Press POWER exactly once on the original remote. Confirm the AC
+   acknowledges the new ON state. Heating output/compressor may be
+   delayed by its normal protection controls.
+
+Optional later capture: `heat_22_medium` from a physical HEAT session.
+Do not change fan speed while either power recording is in progress.
+
+### Retrieve results
+
+Read, but **never edit**:
+`/config/.storage/broadlink_remote_a8ddec125fc3_codes`
+
+Copy only `data.woods_heat_research.heat_power_off` and
+`data.woods_heat_research.heat_power_on` Base64 strings, and report
+whether each physical power transition occurred. Do not share the whole
+storage file.
+
+### Offline verification gate
+
+Decode both with `tools/inspect_broadlink_ir.py`, compare to recorded
+HEAT mode frame, inspect B1/B6/B7/B8 and cross-check the upstream
+`power_command` encoding. Check whether power is a toggle rather than
+an absolute ON/OFF command. Before any production change, assess
+how the one-way IR state can disagree after someone uses the original
+remote or a Home Assistant restart.
+
+Only after this will we add a **capture-backed**, supervised HEAT
+implementation on `dev`, test it on the physical AC and release the
+next HACS beta (`dev → beta → main`). Until then the installed
+`2026.10.0b5` stays unchanged.
+
+---
 
 ## Record with the original Wood's remote
 
@@ -231,3 +312,78 @@ functions are explicitly postponed to the backlog, along with Sleep and
 other nonessential extras.
 
 See `docs/TODO.md`.
+
+
+## Captured HEAT power verification (25 October 2026)
+
+Both new power captures decode as exact 72-bit original Wood's frames:
+
+| Recorded action | Original-remote frame |
+|---|---|
+| HEAT POWER OFF, 22 °C, LOW | `55 60 00 0D 00 00 10 88 5A` |
+| HEAT POWER ON, 22 °C, LOW | `55 62 00 0D 00 00 10 88 5C` |
+| HEAT state change, 22 °C, LOW | `55 62 00 0D 00 00 10 84 58` |
+| HEAT state change, 23 °C, LOW | `55 72 00 0E 00 00 10 84 69` |
+
+The `dev` encoder now reproduces **all four frames byte-for-byte**.
+The POWER OFF/ON difference is B1 `0x60`→`0x62` and B8
+`0x5A`→`0x5C`; B7 is `0x88` in both. A normal HEAT state frame
+instead has B7=`0x84`, including bit `0x04`. That bit is still
+semantically ambiguous (upstream names it Auto Clean) and is not
+presented as an independent Auto Clean action.
+
+### Required physical RM4 replay before beta
+
+Keep smartplug mains **ON** throughout, supervise the AC and respect
+compressor restart delays. No direct `dev` installation is needed.
+
+When the physical AC is running in **HEAT 22°C/LOW**, open
+**Developer Tools → Actions** in Home Assistant:
+
+```yaml
+action: remote.send_command
+target:
+  entity_id: remote.rm4_mini
+data:
+  device: woods_heat_research
+  command: heat_power_off
+```
+
+Confirm the *physical* appliance has switched OFF. Do not confuse HA's
+last requested climate state with actual AC feedback.
+
+After the AC has finished shutting down and sufficient time has
+elapsed for a safe restart, send:
+
+```yaml
+action: remote.send_command
+target:
+  entity_id: remote.rm4_mini
+data:
+  device: woods_heat_research
+  command: heat_power_on
+```
+
+Confirm physical ON and HEAT on its display; compressor/heater output
+may be delayed by appliance protection. Report whether **both** actions
+were accepted. If either fails, don't use unattended HEAT automation;
+capture a second original-remote sample and investigate power semantics.
+
+A successful decode or green GitHub CI alone is **not** physical
+confirmation. Publish `2026.10.0b6` to HACS only after the physical
+RM4 test passes; follow `dev → beta → main`.
+
+
+## Physical HEAT replay confirmed — 26 October 2026
+
+The user confirms that **both** of the learned commands
+`woods_heat_research.heat_power_off` and
+`woods_heat_research.heat_power_on` worked when replayed from
+`remote.rm4_mini` and physically switched off/on the Wood's Cortina Duo.
+
+This validates RM4 playback of the learned original-remote frames,
+**not** yet the full generated Home Assistant HEAT state machine, every
+setpoint/fan speed, or idempotent power handling after original-remote
+changes. A supervised b6 HACS beta is appropriate; do not enable
+unattended HEAT/frost-protection automations until the newly generated
+path has been observed on the physical appliance.

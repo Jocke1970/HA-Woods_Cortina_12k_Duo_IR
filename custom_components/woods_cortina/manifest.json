@@ -1,7 +1,7 @@
 {
   "domain": "woods_cortina",
   "name": "Wood's Cortina IR",
-  "version": "2026.10.0b5",
+  "version": "2026.10.0b6",
   "documentation": "https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR",
   "issue_tracker": "https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR/issues",
   "codeowners": [],
