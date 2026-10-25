@@ -4,7 +4,7 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0b6";
+  const VERSION = "2026.10.0b7";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "heat", label: "Värme", icon: "mdi:radiator" },
@@ -61,18 +61,22 @@
     .hero[data-mode="dry"]{background:linear-gradient(130deg,#173445,#195665)}
     .hero[data-mode="fan_only"]{background:linear-gradient(130deg,#213c42,#245962)}
     .hero[data-mode="off"]{background:linear-gradient(130deg,#333d48,#424950)}
-    .head{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
-    .brand{min-width:0;max-width:100%}
+    .head{position:relative;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:10px}
+    .brand{min-width:0;flex:1;max-width:100%}
     .eyebrow{font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:#bbd6e6;font-weight:700;overflow-wrap:anywhere}
     .name{margin:5px 0 0;font-size:clamp(16px,5.4cqi,20px);font-weight:700;letter-spacing:-.03em;overflow-wrap:anywhere;line-height:1.24}
-    .status{display:inline-flex;max-width:100%;align-items:center;gap:6px;padding:5px 10px;border-radius:50px;background:rgba(255,255,255,.12);color:#e7f5ff;font-size:10.5px;white-space:nowrap}
+    .status{display:inline-flex;max-width:100%;align-items:center;gap:6px;margin-top:10px;padding:5px 10px;border-radius:50px;background:rgba(255,255,255,.12);color:#e7f5ff;font-size:10.5px;white-space:nowrap}
+    .power-cluster{flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;width:72px;max-width:34%;min-width:0}
+    .power-hint{font-size:10px;line-height:1.25;color:#c7deeb;letter-spacing:.03em;text-align:center;overflow-wrap:anywhere}
     .dot{width:7px;height:7px;flex:none;border-radius:50%;background:#7cdbbe;box-shadow:0 0 0 3px rgba(124,219,190,.14)}
     .status.off .dot{background:#aeb5be;box-shadow:none}
-    .hero-main{position:relative;margin-top:19px;display:grid;grid-template-columns:minmax(0,1fr);gap:13px}
+    .hero-main{position:relative;margin-top:22px;display:grid;grid-template-columns:minmax(0,1fr);gap:13px}
+    .temperature-stats{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.82fr);align-items:end;gap:clamp(7px,3cqi,15px);min-width:0}
+    .setpoint-box{min-width:0}
     .setpoint-caption,.minor-caption{font-size:10px;color:#c8e3f1;letter-spacing:.06em}
     .setpoint-row{display:flex;align-items:baseline;gap:4px;margin-top:4px;white-space:nowrap}
-    .setpoint-value{font-size:clamp(44px,16cqi,64px);line-height:1;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.07em}
-    .setpoint-unit{font-size:22px;font-weight:500;opacity:.88}
+    .setpoint-value{font-size:clamp(38px,13.5cqi,62px);line-height:1;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.07em}
+    .setpoint-unit{font-size:clamp(16px,4.8cqi,22px);font-weight:500;opacity:.88}
     .dim{opacity:.48}
     .stepper{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%;align-self:end}
     button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -80,9 +84,9 @@
     button:disabled{opacity:.32;cursor:not-allowed;filter:grayscale(.7)}
     .step{display:grid;place-items:center;min-height:42px;width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-size:26px;font-weight:300}
     .step:not(:disabled):hover{background:rgba(255,255,255,.23)}
-    .room{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:20px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18)}
-    .room strong{display:block;margin-top:3px;font-size:18px;font-weight:650}
-    .room .muted{color:#c9e0eb;font-size:10px;line-height:1.35;overflow-wrap:anywhere}
+    .room{min-width:0;padding-left:clamp(7px,2.3cqi,13px);border-left:1px solid rgba(255,255,255,.25);align-self:end;padding-bottom:3px}
+    .room strong{display:block;margin-top:7px;font-size:clamp(15px,5cqi,20px);line-height:1.1;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .telemetry-note{font-size:10px;line-height:1.4;color:#b8d7e7;margin-top:11px}
     .hint{font-size:11px;color:var(--secondary-text-color,#8d9da7);margin-top:10px;line-height:1.45}
     .hero-controls{position:relative;z-index:1;margin-top:19px;padding-top:15px;border-top:1px solid rgba(255,255,255,.19)}
     .hero-label{font-size:10px;letter-spacing:.12em;font-weight:700;color:#b9d7e8;margin-bottom:9px}
@@ -96,10 +100,10 @@
     .mode[data-value="fan_only"] ha-icon{color:#c1dbff}
     .mode.active{background:rgba(69,186,237,.23);border-color:#74d2ff;box-shadow:inset 0 0 0 1px rgba(100,211,255,.2);color:#fff}
     .mode:not(:disabled):hover{background:rgba(255,255,255,.15)}
-    .power{display:flex;align-items:center;justify-content:center;gap:9px;min-height:46px;width:100%;border-radius:12px;padding:10px 13px;background:#28a0c0;border:1px solid rgba(141,235,255,.7);color:#fff;font-size:13px;font-weight:750}
+    .power{display:grid;place-items:center;width:48px;height:48px;min-height:48px;border-radius:14px;padding:0;background:#28a0c0;border:1px solid rgba(141,235,255,.7);color:#fff}
     .power.off{background:rgba(236,248,255,.11);border-color:rgba(236,248,255,.28)}
-    .power ha-icon{--mdc-icon-size:20px}
-    .hero-power-area{margin-top:12px}
+    .power ha-icon{--mdc-icon-size:25px}
+    .hero-power-area{margin-top:13px}
     .supply-indicator{margin-top:7px;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10px;color:#c5dfec}
     .supply-indicator ha-icon{--mdc-icon-size:14px}
     .mains-off-link{background:transparent;border:1px solid rgba(204,231,244,.36);border-radius:9px;color:#ebf8ff;font-size:10px;padding:5px 8px;min-height:28px;line-height:1.2}
@@ -130,19 +134,23 @@
     .error{margin-top:11px;padding:9px 11px;background:rgba(205,53,74,.10);border:1px solid rgba(205,53,74,.45);border-radius:10px;color:var(--error-color,#e46363);font-size:11px;line-height:1.4}
     .unavailable{padding:18px;color:var(--secondary-text-color,#999)}
     @container (min-width:355px){
-      .head{flex-direction:row;align-items:flex-start}
-      .status{margin-top:2px}
+      .head{align-items:flex-start}
       .hero-main{grid-template-columns:minmax(0,1fr) auto;align-items:end}
       .stepper{width:auto;grid-template-columns:repeat(2,43px)}
-      .room{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}
-      .room .muted{text-align:right}
+
       .bottom{flex-direction:row;justify-content:space-between}
       .bottom .stamp{justify-content:flex-end}
       .mode{min-height:81px}
       .hero-modes{grid-template-columns:repeat(4,minmax(0,1fr))}
     }
     @container (max-width:210px){
-      .setpoint-value{font-size:42px}
+      .setpoint-value{font-size:34px}
+      .setpoint-unit{font-size:15px}
+      .room strong{font-size:14px}
+      .room .minor-caption{font-size:9px}
+      .power-cluster{width:54px}
+      .power{width:43px;height:43px;min-height:43px}
+      .power-hint{font-size:9px}
       .modes{gap:4px}
       .mode{font-size:9.5px}
     }
@@ -276,6 +284,9 @@
       const time = lastSent && !Number.isNaN(lastSent.valueOf())
         ? lastSent.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : "Aldrig";
       const heroMode = mainsOff ? "off" : on ? entity.state : "off";
+      const powerDescription = mainsOff ? "Slå på huvudström" : mainsOn ?
+        (on ? "Stoppa AC via IR" : "Starta AC via IR") : "Huvudström okänd";
+      const powerAreaLabel = mainsOff ? "Huvudström" : mainsOn ? "AC" : "Okänd";
       const statusText = mainsOff ? "Ström av" : !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
         entity.state === "heat" ? "Värme aktiv" : entity.state === "dry" ? "Avfuktning" : "Fläkt";
       const disabledText = entity.state === "fan_only" || entity.state === "dry"
@@ -288,14 +299,30 @@
             <div class="hero" data-mode="${htmlEscape(heroMode)}">
               <div class="head">
                 <div class="brand"><div class="eyebrow">KLIMATKONTROLL · IR</div>
-                  <div class="name">${htmlEscape(this._config.name)}</div></div>
-                <span class="status ${on ? "" : "off"}"><span class="dot"></span>${statusText}</span>
+                  <div class="name">${htmlEscape(this._config.name)}</div>
+                  <span class="status ${on && !mainsOff ? "" : "off"}"><span class="dot"></span>${statusText}</span>
+                </div>
+                <div class="power-cluster">
+                  <button type="button" class="power ${on && mainsOn ? "" : "off"}"
+                    data-action="power" aria-label="${htmlEscape(powerDescription)}"
+                    title="${htmlEscape(powerDescription)}"
+                    ${this._busy || !mainsOnline ? "disabled" : ""}>
+                    <ha-icon icon="mdi:power"></ha-icon>
+                  </button>
+                  <span class="power-hint">${powerAreaLabel}</span>
+                </div>
               </div>
               <div class="hero-main">
-                <div>
-                  <div class="setpoint-caption">${cooling || heating ? "BÖRTEMPERATUR" : "SENASTE BÖRVÄRDE"}</div>
-                  <div class="setpoint-row ${cooling || heating ? "" : "dim"}">
-                    <span class="setpoint-value">${fmt(target)}</span><span class="setpoint-unit">°C</span>
+                <div class="temperature-stats">
+                  <div class="setpoint-box">
+                    <div class="setpoint-caption">${cooling || heating ? "BÖRTEMPERATUR" : "SENASTE BÖRVÄRDE"}</div>
+                    <div class="setpoint-row ${cooling || heating ? "" : "dim"}">
+                      <span class="setpoint-value">${fmt(target)}</span><span class="setpoint-unit">°C</span>
+                    </div>
+                  </div>
+                  <div class="room">
+                    <div class="minor-caption">RUMSTEMPERATUR</div>
+                    <strong>${room}</strong>
                   </div>
                 </div>
                 <div class="stepper">
@@ -305,20 +332,11 @@
                     ${!adjustable || target >= Number(attr.max_temp ?? 30) ? "disabled" : ""}>+</button>
                 </div>
               </div>
-              <div class="room">
-                <div><div class="minor-caption">RUMSTEMPERATUR</div><strong>${room}</strong></div>
-                <div class="muted">Begärda inställningar<br>ej bekräftad AC-status</div>
-              </div>
+              <div class="telemetry-note">Inställningar via IR · Ingen kvittens från AC:n</div>
               <div class="hero-controls">
                 <div class="hero-label">DRIFTLÄGE</div>
                 <div class="hero-modes">${modeButtons}</div>
                 <div class="hero-power-area">
-                  <button type="button" class="power ${on && mainsOn ? "" : "off"}"
-                    data-action="power" aria-label="${mainsOff ? "Slå på huvudström" : mainsOn ? (on ? "Stoppa AC via IR" : "Starta AC via IR") : "Huvudström okänd"}"
-                    ${this._busy || !mainsOnline ? "disabled" : ""}>
-                    <ha-icon icon="${mainsOff ? "mdi:power-plug" : "mdi:power"}"></ha-icon>
-                    ${mainsOff ? "Slå på huvudström" : mainsOn ? (on ? "Stoppa AC" : "Starta AC") : "Huvudström okänd"}
-                  </button>
                   <div class="supply-indicator">
                     <span><ha-icon icon="mdi:power-plug"></ha-icon>
                       ${mainsOn ? "Huvudström på" : mainsOff ? "Huvudström av" : "Ingen status från smartplugg"}</span>

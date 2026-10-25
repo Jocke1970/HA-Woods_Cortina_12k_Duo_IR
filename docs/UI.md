@@ -1,4 +1,4 @@
-# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b6
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b7
 
 The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
@@ -9,7 +9,7 @@ JavaScript dependency. Home Assistant serves its JavaScript from
 ## Upgrade from b1 and load the card
 
 1. From the already-added HACS custom repository, choose beta
-   `2026.10.0b6` and download/update it.
+   `2026.10.0b7` and download/update it.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
@@ -159,3 +159,26 @@ The three fläkthastighet buttons now show built-in Home Assistant icons
 without visible Låg/Medel/Hög words. Accessible Swedish button names,
 hover titles, selection state and `climate.set_fan_mode` service
 values remain unchanged. No external icon library is needed.
+
+
+## Header and temperature layout (2026.10.0b7)
+
+- The **single primary power button** is now a compact `mdi:power`
+  icon in the top-right corner. It always uses the same icon, regardless
+  of AC versus smartplug state.
+- Directly below the icon, the small contextual hint reads
+  **Huvudström** when the smartplug is OFF, **AC** when mains is ON,
+  or **Okänd** when smartplug status is unknown. `title` and
+  `aria-label` expose the precise next action to pointer and keyboard
+  users: switch mains ON / start AC / stop AC.
+- The requested target and the measured room temperature now sit on
+  **the same row** with a subtle vertical divider and a smaller font
+  for the room temperature. On narrow cards, +/- buttons remain
+  below; on wider cards they appear to the side.
+- The guarded secondary **Bryt huvudström** button remains below
+  the HVAC mode controls, with the same low-draw, cooldown and
+  confirmation checks. Relocating the primary button **does not**
+  change its `switch`/`climate` service-routing logic.
+- Both expanders, the four HVAC mode icons and the fan-speed icons
+  remain in the previous order. The resource URL stays
+  `/woods_cortina/woods-cortina-card.js` without `?v=`.

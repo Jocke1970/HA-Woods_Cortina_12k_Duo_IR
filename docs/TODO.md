@@ -17,15 +17,20 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 - [x] Captured original-remote HEAT POWER OFF/ON and decoded both frames.
 - [x] **Physical RM4 replay:** learned HEAT OFF and ON both worked on
   the real AC (user-confirmed).
-- [ ] Test b6's **generated** HEAT in climate/UI: 22°C, 22→23°C,
-  POWER OFF/ON, COOL↔HEAT transitions and fan speeds while supervised.
-- [ ] Confirm HEAT at another fan speed and/or setpoint, preferably including
-  a fresh transition showing HEAT on the original remote's LCD.
+- [x] **Hardware acceptance of b6:** User reports all buttons/functions,
+  mode combinations, temperature changes, fan speed changes and power
+  controls in the integration/card functioning as intended on the actual
+  AC (2026-10-26). This is manual user acceptance, not an instrumented
+  or automated hardware test.
+- [x] User reports successful HEAT fan-speed and setpoint changes through
+  b6 controls; no additional raw per-speed IR capture was collected.
 - [x] Implement captured HEAT state/power encoding, `HVACMode.HEAT`,
   HA climate restore of mode=-1, and radiator mode button in `dev`,
   with regression tests. B7 bit `0x04` remains ambiguous; no Auto Clean UI.
-- [ ] Supervised physical tests: HEAT command acceptance, setpoint changes,
-  fan behavior, power transitions, and safe switching between COOL and HEAT.
+- [x] Supervised physical functional test: user reports HEAT accepted,
+  setpoints, fan, power and mode switching all working in their setup.
+- [ ] Continue monitoring for intermittent issues after normal restarts and
+  independent original-remote use; HA IR state remains optimistic.
 - [ ] Retain last COOL target when switching through FAN/DRY; do not send
   pointless temperature-only frames while in those modes. Verify actual
   remote/AC behavior before changing backend semantics.
@@ -43,8 +48,16 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
   IR provides no actual appliance-state feedback, so plan failure/restart
   and anti-short-cycle handling before enabling automation.
 
-- [ ] Visually verify the responsive UI and the climate service click flow on a real Home Assistant dashboard at narrow and wide widths. Browser editor mode may intercept clicks.
-- [ ] Confirm HACS resource reload with the permanent URL `/woods_cortina/woods-cortina-card.js` (no `?v=` suffix).
+- [x] UI and climate button functionality physically checked by user in
+  their current HA dashboard; reported functioning as expected.
+- [x] First UI finishing pass in `dev`: `mdi:power` in top-right
+  header with dynamic Huvudström/AC hint, room temperature beside
+  target; automated regression tests cover placement and service routing.
+- [ ] Obtain user's visual approval on real narrow and wide HA dashboards;
+  continue any further polish before `main`.
+- [x] Keep permanent JS resource URL
+  `/woods_cortina/woods-cortina-card.js` with no `?v=` suffix.
+- [ ] Install `2026.10.0b7` through HACS and approve final UI; no direct dev installs.
 - [ ] Investigate state desynchronization when AC is switched with its original IR remote. User observed that UI/climate control worked after starting the physical AC with the remote; distinguish physical power state, power-button toggle semantics, and whether non-power IR frames are ignored while off.
 - [ ] Capture original POWER on/off behavior before changing `_apply` or HA `turn_on`/`turn_off` semantics. The remote is one-way and `requested_power` is optimistic; avoid presenting a toggle as a guaranteed state-setting action.
 
@@ -71,9 +84,12 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 - IR is one-way. `requested_power`, target, and mode are assumed last
   requests, not appliance feedback.
-- HACS beta `2026.10.0b6` includes experimental HEAT after the learned HEAT power frames worked via RM4. Full generated-HEAT hardware regression tests remain.
+- HACS beta `2026.10.0b6` has user-confirmed functional acceptance
+  of climate and JS controls including HEAT. IR state desynchronization,
+  HA restart/recovery and unattended operation remain separate limitations.
 - Keep Auto Clean investigations on `dev` pending separate physical tests.
-  Do not promote b6 to `main` before further HEAT hardware regression tests.
+  Do not promote to `main` until UI acceptance, CI and release checklist
+  are satisfied. No new extra features are required for initial main.
 
 See [HEAT_CAPTURE.md](HEAT_CAPTURE.md) for decoded user captures and protocol
 hypotheses.
