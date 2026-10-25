@@ -123,3 +123,35 @@ def test_mode_button_capture_is_23c_and_has_no_mode_difference():
     assert actual == earlier_23
     assert actual.hex(" ").upper() == "55 72 00 0E 00 00 10 84 69"
     assert (actual[1] >> 4) + 16 == 23
+
+
+# Original user-owned Wood's remote: consecutive MODE presses into DRY and HEAT.
+# The labels were verified from the remote mode sequence, but hardware
+# validation and an independently confirmed COOL transition are still pending.
+TRANSITION_CAPTURES = {
+    "dry_mode": ("JgCYAAABgKQREBQ+ERAUPxAQFD4SEBQ9FD0SEBERERARDxIQEz8RDxIQEREREBEREA8SERAQEhARERAQERETPxAREBEREBEQEhAQEREPEhEQEBIPERASEBERERARDxEREREQEREQEQ8SEBERERATPhERERAUPhEQEz8QEREQEREREBQ9EREREBAREz8UPRQ9FT4UPRIQEz4RAA0F", "55 82 00 10 00 00 12 84 7D"),
+    "heat_from_dry": ("JgCYAAABgaUPEBQ/ERAUPhEQFD0SEBM+ERAUPxQ9Eg8SEBEPFT4REBIPEREQEBIQERASDxERERAREBEQEg8REBQ/Ez4REBQ+ERASEBEQEREQEBEQEhAREBIQEQ8REBIQERASEBAQEhARERAQEhETPhEQERAQEBIQFD4REBERERARERM+ERAREREQEz4RERM+E0AQERAQERASAA0F", "55 62 00 0D 00 00 10 84 58"),
+}
+
+
+@pytest.mark.parametrize("name", TRANSITION_CAPTURES)
+def test_captured_mode_transitions_decode(name):
+    learned, expected = TRANSITION_CAPTURES[name]
+    decoded = decode_woods_frame(broadlink_to_durations(learned))
+    assert decoded.hex(" ").upper() == expected
+
+
+def test_heat_candidate_is_mode_nibble_zero_and_checksum_offset_minus_one():
+    dry = decode_woods_frame(broadlink_to_durations(TRANSITION_CAPTURES["dry_mode"][0]))
+    heat = decode_woods_frame(broadlink_to_durations(TRANSITION_CAPTURES["heat_from_dry"][0]))
+    assert dry[6] == 0x12
+    assert heat[6] == 0x10
+    assert dry[7] == heat[7] == 0x84
+    # B8 follows the upstream Cool baseline plus mode and the B7+4 feature:
+    # 24°C baseline 0x78, DRY=+1, feature=+4
+    # 22°C baseline 0x55, inferred HEAT=-1, feature=+4
+    assert dry[8] == (0x78 + 1 + 4) & 0xFF
+    assert heat[8] == (0x55 - 1 + 4) & 0xFF
+    assert heat == decode_woods_frame(
+        broadlink_to_durations(ORIGINAL_CAPTURES["heat_22_low"][0])
+    )
