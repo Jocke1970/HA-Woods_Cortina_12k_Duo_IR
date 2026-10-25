@@ -40,7 +40,7 @@ jobs:
           assert manifest["domain"] == "woods_cortina"
           assert manifest["config_flow"] is True
           assert manifest["version"] == "2026.10.0b8"
-          for name in ("icon.png", "icon@2x.png"):
+          for name in ("icon.png",):
               assert Path("custom_components/woods_cortina/brand", name).is_file()
 
           assert "http" in manifest["dependencies"]

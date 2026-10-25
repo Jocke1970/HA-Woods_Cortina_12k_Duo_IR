@@ -96,8 +96,7 @@ IR transmission, and user confirmation within 15 s. This is only a
 safety interlock: check the physical AC has stopped.
 
 The custom integration now packages the approved AC/IR illustration as
-`custom_components/woods_cortina/brand/icon.png` (256×256) and
-`icon@2x.png` (512×512), using native HA 2026.3+ local integration
+`custom_components/woods_cortina/brand/icon.png` (256×256), using native HA 2026.3+ local integration
 branding. No external icon repository or resources are needed. The brand
 icon applies to the HA integration; the Lovelace power button stays
 `mdi:power`.

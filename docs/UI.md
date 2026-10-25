@@ -205,6 +205,5 @@ cannot send mains-off.
 The room-temperature caption is shortened to **RUM** and right-aligned
 alongside the requested setpoint at narrow widths.
 
-The integration's own icon lives under `brand/icon.png` and
-`brand/icon@2x.png`. They are shown by Home Assistant's local brand
+The integration's own icon lives under `brand/icon.png` (256 pixels). It is shown by Home Assistant's local brand
 support (HA ≥2026.3) and are separate from `mdi:power` in the card.

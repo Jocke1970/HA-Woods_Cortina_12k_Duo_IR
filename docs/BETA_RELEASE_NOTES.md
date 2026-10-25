@@ -25,7 +25,7 @@
 ## HA integration branding
 
 - Bundles the previously approved AC + IR waves artwork locally as
-  `custom_components/woods_cortina/brand/icon.png` and `icon@2x.png`
+  `custom_components/woods_cortina/brand/icon.png` (256 pixels)
   following the HA 2026.3+ local brand convention.
 - No additional Lovelace resource, brand CDN, or HACS repository needed.
 
