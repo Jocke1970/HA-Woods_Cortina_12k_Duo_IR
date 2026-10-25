@@ -35,7 +35,7 @@ class WoodsCortinaClimate(ClimateEntity, RestoreEntity):
     _attr_name = DEFAULT_NAME
     _attr_has_entity_name = False
     _attr_assumed_state = True
-    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_min_temp = MIN_TEMP
     _attr_max_temp = MAX_TEMP
     _attr_target_temperature_step = 1

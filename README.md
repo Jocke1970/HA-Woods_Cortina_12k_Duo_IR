@@ -1,6 +1,6 @@
 # Wood's Cortina 12K Duo IR — Home Assistant
 
-**Experimental / `dev` only.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
+**Experimental beta for supervised testing.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
 
 > No real-hardware validation has been completed. In particular, compatibility with the **Duo** remote and heating-mode encoding are unverified. Heat is deliberately not offered.
 
@@ -19,13 +19,13 @@ The IR protocol encoder is adapted from [srednak/woods-protocol](https://github.
 ## Install for bench testing
 
 1. First configure the RM4 Mini with Home Assistant's official [BroadLink integration](https://www.home-assistant.io/integrations/broadlink/). Verify that a `remote.***` entity exists.
-2. From the `dev` branch, copy `custom_components/woods_cortina/` to `/config/custom_components/woods_cortina/` in your Home Assistant installation.
-3. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and search for **Wood's Cortina IR**.
-4. Select your BroadLink `remote` entity and, optionally, an existing room temperature sensor.
-5. Start with an **unobstructed, supervised** IR test (e.g. Cool / 22°C / Low fan). Verify what the appliance *actually* does, and compare with its original remote.
-6. If anything unexpected happens, stop testing and send captured codes/logs; do not enable automations.
+2. In **HACS**, open the three-dot menu → **Custom repositories**. Add `https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR` as category **Integration**.
+3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `v0.1.0b1`. Do **not** install the default `main` branch or use `dev`.
+4. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and search for **Wood's Cortina IR**.
+5. Choose BroadLink `remote.rm4_mini` and optionally a room-temperature sensor.
+6. Begin with a **supervised** IR test (Cool / 22°C / Low fan). Compare the result with the original remote. Do not enable automations until the signal is validated.
 
-There is no need to copy the original repo's ESPHome firmware. This is a **development preview**, not yet a HACS release or a production-ready controller.
+There is no need for the upstream ESPHome firmware. Install **only GitHub beta releases through HACS**. This is not yet a production-ready controller.
 
 ## Implemented now
 
@@ -42,7 +42,7 @@ There is no need to copy the original repo's ESPHome firmware. This is a **devel
 - Reading Wood's *internal* room sensor (IR is send-only).
 - Detecting changes made with the appliance's physical buttons or original remote.
 - Premium Lovelace card; planned as a separate JS module.
-- Automatic HACS installs and release packaging until bench validation.
+- Stable/main release until supervised testing is complete. The beta is distributed as a GitHub prerelease through HACS.
 
 ## Development workflow
 
