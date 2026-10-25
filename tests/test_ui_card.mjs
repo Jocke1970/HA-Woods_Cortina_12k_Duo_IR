@@ -301,3 +301,26 @@ test('sensor and switch entity customisation validates domain', () => {
   });
   assert.equal(card._config.power_entity, 'switch.other_plug');
 });
+
+
+test('mains-off confirmation expires after fifteen seconds; next tap only re-arms', async () => {
+  const { card, calls } = createCard();
+  await card._handleClick(click('mains'));
+  assert.equal(card._confirmMainsOff, true);
+  card._confirmMainsOffAt = Date.now() - 16000;
+  await card._handleClick(click('mains'));
+  assert.equal(calls.length, 0);
+  assert.equal(card._confirmMainsOff, true);
+  assert.ok(card._confirmMainsOffAt > Date.now() - 15000);
+});
+
+test('if switch changes to off externally, stale confirmation is cleared and hero shows mains off', async () => {
+  const { card } = createCard();
+  await card._handleClick(click('mains'));
+  assert.equal(card._confirmMainsOff, true);
+  const ha = card._hass;
+  ha.states['switch.woods_cortina_silent_12k_duo'].state = 'off';
+  card.hass = ha;
+  assert.equal(card._confirmMainsOff, false);
+  assert.ok(card.shadowRoot.innerHTML.includes('Ström av'));
+});

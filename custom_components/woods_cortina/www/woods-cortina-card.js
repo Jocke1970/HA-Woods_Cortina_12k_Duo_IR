@@ -142,6 +142,7 @@
       this._error = "";
       this._notice = "";
       this._confirmMainsOff = false;
+      this._confirmMainsOffAt = 0;
       this._advanced = false;
       this.shadowRoot.addEventListener("toggle", (event) => {
         if (event.target && event.target.tagName === "DETAILS") this._advanced = event.target.open;
@@ -171,6 +172,11 @@
 
     set hass(hass) {
       this._hass = hass;
+      if (this._confirmMainsOff &&
+          (this._mainsEntity()?.state !== "on" || Date.now() - this._confirmMainsOffAt > 15000)) {
+        this._confirmMainsOff = false;
+        this._confirmMainsOffAt = 0;
+      }
       this._render();
     }
 
@@ -231,8 +237,8 @@
       const lastSent = attr.last_ir_sent_at ? new Date(attr.last_ir_sent_at) : null;
       const time = lastSent && !Number.isNaN(lastSent.valueOf())
         ? lastSent.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }) : "Aldrig";
-      const heroMode = on ? entity.state : "off";
-      const statusText = !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
+      const heroMode = mainsOff ? "off" : on ? entity.state : "off";
+      const statusText = mainsOff ? "Ström av" : !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
         entity.state === "dry" ? "Avfuktning" : "Fläkt";
       const disabledText = entity.state === "fan_only" || entity.state === "dry"
         ? "Temperaturinställning används inte i detta driftläge."
@@ -363,8 +369,13 @@
       let data = {};
       if (action === "mains") {
         if (!mains || !["on", "off"].includes(mains.state)) return;
+        if (this._confirmMainsOff && Date.now() - this._confirmMainsOffAt > 15000) {
+          this._confirmMainsOff = false;
+          this._confirmMainsOffAt = 0;
+        }
         if (mains.state === "on" && !this._confirmMainsOff) {
           this._confirmMainsOff = true;
+          this._confirmMainsOffAt = Date.now();
           this._error = "";
           this._notice = "Bekräfta endast om AC:n har stoppats via IR och fått stanna.";
           this._render();
@@ -375,6 +386,7 @@
         service = mains.state === "on" ? "turn_off" : "turn_on";
       } else {
         this._confirmMainsOff = false;
+        this._confirmMainsOffAt = 0;
       }
       if (action === "power") {
         service = on ? "turn_off" : "turn_on";
@@ -403,6 +415,7 @@
       }
       if (!service) return;
       this._confirmMainsOff = false;
+      this._confirmMainsOffAt = 0;
       this._busy = true;
       this._error = "";
       this._notice = "Skickar begäran till Home Assistant…";
