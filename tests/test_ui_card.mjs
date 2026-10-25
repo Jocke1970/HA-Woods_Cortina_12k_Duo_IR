@@ -220,7 +220,8 @@ test('power and energy entities are exposed in the default card config', () => {
   assert.ok(card.shadowRoot.innerHTML.includes('18,35 kWh'));
   assert.ok(card.shadowRoot.innerHTML.includes('Strömförbrukning'));
   assert.ok(card.shadowRoot.innerHTML.includes('Huvudström på'));
-  assert.ok(card.shadowRoot.innerHTML.includes('Stoppa AC'));
+  assert.ok(card.shadowRoot.innerHTML.includes('Stoppa AC via IR'));
+  assert.ok(card.shadowRoot.innerHTML.includes('class="power-cluster"'));
 });
 
 test('sensor unavailable or missing displays dash instead of fake consumption', () => {
@@ -360,12 +361,13 @@ test('panel sequence and mode icons live inside hero; energy is second expander'
   const h = card.shadowRoot.innerHTML;
   const hero = h.indexOf('class="hero"');
   const mode = h.indexOf('class="hero-modes"');
-  const power = h.indexOf('class="hero-power-area"');
-  const heroClose = h.indexOf('class="hint"', power);
+  const power = h.indexOf('class="power-cluster"');
+  const mains = h.indexOf('class="hero-power-area"');
+  const heroClose = h.indexOf('class="hint"', mains);
   const settings = h.indexOf('data-panel="settings"');
   const consumption = h.indexOf('data-panel="consumption"');
-  assert.ok(hero >= 0 && mode > hero && power > mode);
-  assert.ok(heroClose > power);
+  assert.ok(hero >= 0 && power > hero && mode > power && mains > mode);
+  assert.ok(heroClose > mains);
   assert.ok(settings > heroClose && consumption > settings);
   assert.ok(h.includes('mdi:snowflake'));
   assert.ok(h.includes('mdi:water-percent'));
@@ -455,4 +457,72 @@ test('icon fan controls still send HA climate service and disable in DRY', async
   const dry = createCard('dry');
   assert.equal(dry.card.shadowRoot.querySelectorAll('button[data-action]')
     .find((b) => b.dataset.action === 'fan').disabled, true);
+});
+
+
+test('header contains exactly one mdi:power button in the upper right corner', () => {
+  for (const [mainsState, hvacState, expectedHint, expectedTitle] of [
+    ['off', 'off', 'Huvudström', 'Slå på huvudström'],
+    ['on', 'off', 'AC', 'Starta AC via IR'],
+    ['on', 'heat', 'AC', 'Stoppa AC via IR'],
+    ['unavailable', 'cool', 'Okänd', 'Huvudström okänd'],
+  ]) {
+    const { card } = createCard(hvacState);
+    card._hass.states['switch.woods_cortina_silent_12k_duo'].state = mainsState;
+    card._render();
+    const html = card.shadowRoot.innerHTML;
+    const head = html.indexOf('class="head"');
+    const headerEnd = html.indexOf('</div>\n              <div class="hero-main">', head);
+    const button = html.match(/<button[^>]*data-action="power"[^>]*>[\s\S]*?<\/button>/);
+    assert.ok(button, 'power button is present');
+    assert.equal((html.match(/data-action="power"/g) || []).length, 1);
+    assert.ok(head >= 0 && html.indexOf('class="power-cluster"') > head);
+    assert.ok(headerEnd > html.indexOf('class="power-cluster"'));
+    assert.ok(html.indexOf('data-action="power"') < html.indexOf('class="hero-main"'));
+    assert.ok(button[0].includes('icon="mdi:power"'));
+    assert.ok(button[0].includes('title="' + expectedTitle + '"'));
+    assert.ok(button[0].includes('aria-label="' + expectedTitle + '"'));
+    assert.ok(html.includes('<span class="power-hint">' + expectedHint + '</span>'));
+    if (mainsState === 'unavailable') assert.ok(button[0].includes('disabled'));
+  }
+});
+
+test('target and room temperatures share same hero row with smaller room reading', () => {
+  const { card } = createCard('heat', 23, { current_temperature: 19.5 });
+  const html = card.shadowRoot.innerHTML;
+  const container = html.indexOf('class="temperature-stats"');
+  const target = html.indexOf('class="setpoint-box"', container);
+  const room = html.indexOf('class="room"', target);
+  const stepper = html.indexOf('class="stepper"', room);
+  const modes = html.indexOf('class="hero-controls"', stepper);
+  assert.ok(container >= 0 && target > container && room > target);
+  assert.ok(stepper > room && modes > stepper);
+  assert.ok(html.slice(container, stepper).includes('23</span>'));
+  assert.ok(html.slice(room, stepper).includes('19,5 °C'));
+  assert.ok(source.includes('.temperature-stats{display:grid;grid-template-columns:'));
+  assert.ok(source.includes('@container (min-width:355px)'));
+  const noTemp = createCard('off', 23, { current_temperature: null });
+  assert.ok(noTemp.card.shadowRoot.innerHTML.includes('<strong>—</strong>'));
+});
+
+test('header power remains context-dependent, never chains switch and climate services', async () => {
+  const { card, calls } = createCard('off');
+  card._hass.states['switch.woods_cortina_silent_12k_duo'].state = 'off';
+  card._render();
+  const button = card.shadowRoot.querySelectorAll('button[data-action]')
+    .find((b) => b.dataset.action === 'power');
+  assert.equal(button.disabled, false);
+  button.click();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'switch');
+  assert.equal(calls[0][1], 'turn_on');
+  await new Promise((resolve) => setImmediate(resolve));
+  card._hass.states['switch.woods_cortina_silent_12k_duo'].state = 'on';
+  card._render();
+  await card._handleClick(click('power'));
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1][0], 'climate');
+  assert.equal(calls[1][1], 'turn_on');
+  assert.ok(!card.shadowRoot.innerHTML.includes('data-action="mains_off"') ||
+    card._isActiveMode(card._entity()) === false);
 });
