@@ -57,6 +57,20 @@ See [docs/UI.md](docs/UI.md) for full instructions. The card never treats the op
 - Built-in Wood's Cortina Lovelace JS card is included in the HACS integration. Add its dashboard resource once, as described in [docs/UI.md](docs/UI.md).
 - Stable/main release until supervised testing is complete. The beta is distributed as a GitHub prerelease through HACS.
 
+## Versioning (from next release)
+
+Use calendar-based versions: `YYYY.MM.0bN`, with a numeric beta counter.
+For example, the **next** beta in October 2026 will be `2026.10.0b3`
+(GitHub tag `v2026.10.0b3`), then `2026.10.0b4` if needed.
+For the first beta in a new month, restart from `b1`, e.g.
+`2026.11.0b1`. Keep the `0` patch component and two-digit month.
+
+Apply the same version consistently to `manifest.json`, the UI card's
+displayed version, the GitHub tag and release notes, and the GitHub Actions
+version assertion. Releases already tagged `v0.1.0b1` and `v0.1.0b2`
+remain intact for HACS users; do not retroactively rewrite or retag them.
+All future betas continue through **dev → beta → main**.
+
 ## Development workflow
 
 `dev → beta → main`. No code will be merged to `main` until validated and reviewed. Run `python -m pytest -q` and `python -m compileall -q custom_components`.
