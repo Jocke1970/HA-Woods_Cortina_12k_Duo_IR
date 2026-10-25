@@ -21,7 +21,7 @@ const context = {
         get() { return this._html; },
         set(markup) {
           this._html = markup;
-          this._buttons = [...markup.matchAll(/<button\\b([^>]+)>/g)]
+          this._buttons = [...markup.matchAll(/<button([^>]+)>/g)]
             .filter((match) => match[1].includes('data-action='))
             .map((match) => {
               const attrs = match[1];
@@ -30,7 +30,7 @@ const context = {
               const listeners = new Map();
               return {
                 dataset: { action, value },
-                disabled: /(?:^|\\s)disabled(?:\\s|$)/.test(attrs),
+                disabled: /(?:^| )disabled(?: |$)/.test(attrs),
                 addEventListener: (eventName, callback) => listeners.set(eventName, callback),
                 click() {
                   const cb = listeners.get('click');
@@ -187,9 +187,9 @@ test('disabled setpoint buttons in DRY and FAN have no active click effect', () 
 
 test('responsive styles use card container size, not browser window width', () => {
   assert.match(source, /container-type:inline-size/);
-  assert.match(source, /@container \\(min-width:355px\\)/);
-  assert.match(source, /grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
-  assert.match(source, /grid-template-columns:minmax\\(0,1fr\\)/);
+  assert.ok(source.includes('@container (min-width:355px)'));
+  assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
+  assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.match(source, /2026\\.10\\.0b3/);
+  assert.ok(source.includes('2026.10.0b3'));
 });
