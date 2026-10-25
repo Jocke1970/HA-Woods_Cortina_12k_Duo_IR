@@ -4,7 +4,7 @@ The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
 JavaScript dependency. Home Assistant serves its JavaScript from
 `custom_components/woods_cortina/www/woods-cortina-card.js` at the URL
-`/woods_cortina/woods-cortina-card.js?v=2026.10.0b3`.
+`/woods_cortina/woods-cortina-card.js`.
 
 ## Upgrade from b1 and load the card
 
@@ -14,10 +14,11 @@ JavaScript dependency. Home Assistant serves its JavaScript from
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
    Home Assistant frontend) and add the new resource:
-   - URL: `/woods_cortina/woods-cortina-card.js?v=2026.10.0b3`
+   - URL: `/woods_cortina/woods-cortina-card.js`
    - Type: **JavaScript module**
-4. Hard-refresh the browser after registering the module
-   (`Ctrl+Shift+R` on Linux).
+4. Reload the dashboard once the resource is registered. If the old card
+   persists, a browser hard-refresh (`Ctrl+Shift+R` on Linux) is a fallback,
+   **not** a reason to modify the resource URL.
 5. Edit a dashboard → **Add card → Manual**, then use:
 
 ```yaml
@@ -36,7 +37,7 @@ instead of adding it through the UI:
 
 ```yaml
 resources:
-  - url: /woods_cortina/woods-cortina-card.js?v=2026.10.0b3
+  - url: /woods_cortina/woods-cortina-card.js
     type: module
 ```
 
@@ -68,8 +69,9 @@ resources:
   AC's state can still diverge.
 - If clicking in a dashboard **editor/preview** does nothing, exit edit mode
   and try in the normal dashboard view.
-- After updating HACS, change the Lovelace resource URL to include
-  `?v=2026.10.0b3` to invalidate a cached JavaScript copy and hard-refresh.
+- Keep the resource URL **unchanged** on HACS updates: `/woods_cortina/woods-cortina-card.js`.
+  Avoid query parameters such as `?v=...` because they can complicate resource registration.
+  Reload the dashboard after restarting Home Assistant; only try a browser hard-refresh if an old card is still shown.
 
 ## Important boundaries
 

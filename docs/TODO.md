@@ -42,7 +42,9 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
   and anti-short-cycle handling before enabling automation.
 
 - [ ] Visually verify the responsive UI and the climate service click flow on a real Home Assistant dashboard at narrow and wide widths. Browser editor mode may intercept clicks.
-- [ ] Confirm HACS resource reload and cache-busting URL after updating from b2 to b3.
+- [ ] Confirm HACS resource reload with the permanent URL `/woods_cortina/woods-cortina-card.js` (no `?v=` suffix).
+- [ ] Investigate state desynchronization when AC is switched with its original IR remote. User observed that UI/climate control worked after starting the physical AC with the remote; distinguish physical power state, power-button toggle semantics, and whether non-power IR frames are ignored while off.
+- [ ] Capture original POWER on/off behavior before changing `_apply` or HA `turn_on`/`turn_off` semantics. The remote is one-way and `requested_power` is optimistic; avoid presenting a toggle as a guaranteed state-setting action.
 
 ## P2 — Deferred extras (not blocking basic HEAT/beta work)
 

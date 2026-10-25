@@ -13,7 +13,7 @@ First CalVer beta using the required `YYYY.MM.0bN` format.
   bound button handlers instead of only invoking private methods.
 - Compact footer shows the time of the last requested IR transmission
   and exposes the full timestamp as a tooltip.
-- Frontend cache-busting resource URL documented.
+- Permanent, versionless resource URL documented.
 - Updated backend/JS/display/manifest version `2026.10.0b3`.
 - IR codec and climate backend behavior unchanged from b2.
   HEAT, Auto Clean, timer, and Sleep remain unavailable.
@@ -25,15 +25,16 @@ a **normal (not editing) dashboard view**.
 ## Upgrade via HACS
 
 Download beta prerelease `v2026.10.0b3` in the HACS custom
-repository, restart Home Assistant, then **edit the existing dashboard
-JavaScript module resource** to:
+repository and restart Home Assistant. **Keep the existing dashboard
+JavaScript module resource unchanged**:
 
 ```
-/woods_cortina/woods-cortina-card.js?v=2026.10.0b3
+/woods_cortina/woods-cortina-card.js
 ```
 
-Hard-refresh the browser (Ctrl+Shift+R). No need to add a second
-resource or copy frontend files.
+Reload the dashboard. A browser hard-refresh (`Ctrl+Shift+R`) is only a
+fallback for stale frontend code. Do **not** add `?v=...` query parameters.
+No need to add a second resource or copy frontend files.
 
 ```yaml
 type: custom:woods-cortina-card

@@ -38,7 +38,7 @@ There is no need for the upstream ESPHome firmware. Install **only GitHub beta r
 
 ## Dashboard card
 
-The JavaScript card is shipped inside the HACS integration and exposed at `/woods_cortina/woods-cortina-card.js?v=2026.10.0b3`. Add this URL once in dashboard resources (type **JavaScript module**), then add a **Manual** card:
+The JavaScript card is shipped inside the HACS integration and exposed at `/woods_cortina/woods-cortina-card.js`. Add this URL once in dashboard resources (type **JavaScript module**), then add a **Manual** card:
 
 ```yaml
 type: custom:woods-cortina-card
@@ -46,7 +46,7 @@ entity: climate.wood_s_cortina_12k_duo
 name: Wood's Cortina
 ```
 
-After updating from b2, edit the existing Lovelace resource URL to include the new `?v=2026.10.0b3` cache-buster and reload the browser. The narrow card layout and click feedback are improved. See [docs/UI.md](docs/UI.md) for full instructions. The card never treats the optimistic IR state as confirmed AC feedback, and does not expose unverified HEAT or Auto Clean functionality.
+Use the same permanent Lovelace resource URL across all releases—do **not** add version query parameters (`?v=...`). On an upgrade, reload the dashboard; only hard-refresh the browser if it still displays an older JS card. The narrow card layout and click feedback are improved. See [docs/UI.md](docs/UI.md) for full instructions. The card never treats the optimistic IR state as confirmed AC feedback, and does not expose unverified HEAT or Auto Clean functionality.
 
 ## Not implemented / intentionally disabled
 
