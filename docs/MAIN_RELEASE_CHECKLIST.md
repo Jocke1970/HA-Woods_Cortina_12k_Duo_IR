@@ -11,13 +11,13 @@ including heating, mode and temperature changes, fan speeds and power.
 - [x] Owner reports all climate and JS-card functions/combinations work
   in ordinary supervised use, including newly generated HEAT.
 - [x] Latest b6 CI passed on `dev`, PR and `beta`.
-- [ ] Apply cosmetic UI improvements in `dev` based on user feedback.
+- [x] First UI refinements in `dev`: header power icon and side-by-side room/target.
 - [ ] Test new layout in narrow and wider dashboard cards, including
   both expansion panels, 4 HVAC mode icons and fan-speed icons.
-- [ ] Regression-test climate requests, independent smartplug handling,
-  and disabled controls after UI changes.
-- [ ] Publish final UI beta via HACS (`dev → beta`) and receive owner's
-  acceptance on the installed prerelease.
+- [x] Automated UI regressions verify relocated power control, separate
+  switch/climate calls, state-dependent icon help and room/target markup.
+- [ ] Publish UI beta `2026.10.0b7` via HACS (`dev → beta`) and receive
+  owner's final visual/interaction acceptance before `main`.
 - [ ] Before `main`, run a clean CI and review version, HACS metadata,
   bundled frontend resource, README and third-party notices.
 - [ ] Promote the accepted beta commit via reviewed PR `beta → main`.

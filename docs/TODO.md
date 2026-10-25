@@ -50,12 +50,14 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
 
 - [x] UI and climate button functionality physically checked by user in
   their current HA dashboard; reported functioning as expected.
-- [ ] **UI finishing pass:** collect user's cosmetic adjustments; test
-  narrow and wide layout, spacing, expansion, icons, and light/dark themes
-  after edits before main release.
+- [x] First UI finishing pass in `dev`: `mdi:power` in top-right
+  header with dynamic Huvudström/AC hint, room temperature beside
+  target; automated regression tests cover placement and service routing.
+- [ ] Obtain user's visual approval on real narrow and wide HA dashboards;
+  continue any further polish before `main`.
 - [x] Keep permanent JS resource URL
   `/woods_cortina/woods-cortina-card.js` with no `?v=` suffix.
-- [ ] Final beta UI regressions via HACS after polish, not direct dev installation.
+- [ ] Install `2026.10.0b7` through HACS and approve final UI; no direct dev installs.
 - [ ] Investigate state desynchronization when AC is switched with its original IR remote. User observed that UI/climate control worked after starting the physical AC with the remote; distinguish physical power state, power-button toggle semantics, and whether non-power IR frames are ignored while off.
 - [ ] Capture original POWER on/off behavior before changing `_apply` or HA `turn_on`/`turn_off` semantics. The remote is one-way and `requested_power` is optimistic; avoid presenting a toggle as a guaranteed state-setting action.
 

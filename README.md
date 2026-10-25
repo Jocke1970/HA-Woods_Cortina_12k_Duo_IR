@@ -20,7 +20,7 @@ The IR protocol encoder is adapted from [srednak/woods-protocol](https://github.
 
 1. First configure the RM4 Mini with Home Assistant's official [BroadLink integration](https://www.home-assistant.io/integrations/broadlink/). Verify that a `remote.***` entity exists.
 2. In **HACS**, open the three-dot menu → **Custom repositories**. Add `https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR` as category **Integration**.
-3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `2026.10.0b6`. Do **not** install the default `main` branch or use `dev`.
+3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `2026.10.0b7`. Do **not** install the default `main` branch or use `dev`.
 4. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and search for **Wood's Cortina IR**.
 5. Choose BroadLink `remote.rm4_mini` and optionally a room-temperature sensor.
 6. Begin with a **supervised** IR test (Cool / 22°C / Low fan). Compare the result with the original remote. Do not enable automations until the signal is validated.
@@ -38,7 +38,7 @@ There is no need for the upstream ESPHome firmware. Install **only GitHub beta r
 
 ## Dashboard card
 
-The top panel has COOL/HEAT/DRY/FAN buttons with clear mode icons and a **contextual power button**: if mains is off it powers the smartplug only, and if mains is on it starts/stops AC via IR. A secondary **Bryt huvudström** action is shown only when AC is reported off and is guarded by two-click confirmation, low measured power (≤15 W), and 60 seconds since the last IR request. It does not prove the compressor has stopped. Power / daily and monthly energy readings are now in the separate **Strömförbrukning** expander below **Fler inställningar**. The smartplug uses `switch.woods_cortina_silent_12k_duo` and sensors `sensor.woods_cortina_silent_12k_duo_power`, `sensor.woods_cortina_silent_12k_duo_energy_daily` and `sensor.woods_cortina_silent_12k_duo_energy_monthly` by default. You can override them as card properties. Mains off requires two taps and **must not be used to interrupt a running compressor**.
+The top panel has COOL/HEAT/DRY/FAN buttons with clear mode icons and a **contextual power button** in the upper-right header. The power button always displays `mdi:power`, with a small **Huvudström** / **AC** context label and accessible tooltip. **Room temperature is now beside the target temperature**. The power button continues to use the same safe context-aware behavior: if mains is off it powers the smartplug only, and if mains is on it starts/stops AC via IR. A secondary **Bryt huvudström** action is shown only when AC is reported off and is guarded by two-click confirmation, low measured power (≤15 W), and 60 seconds since the last IR request. It does not prove the compressor has stopped. Power / daily and monthly energy readings are now in the separate **Strömförbrukning** expander below **Fler inställningar**. The smartplug uses `switch.woods_cortina_silent_12k_duo` and sensors `sensor.woods_cortina_silent_12k_duo_power`, `sensor.woods_cortina_silent_12k_duo_energy_daily` and `sensor.woods_cortina_silent_12k_duo_energy_monthly` by default. You can override them as card properties. Mains off requires two taps and **must not be used to interrupt a running compressor**.
 
 The JavaScript card is shipped inside the HACS integration and exposed at `/woods_cortina/woods-cortina-card.js`. Add this URL once in dashboard resources (type **JavaScript module**), then add a **Manual** card:
 
@@ -62,8 +62,8 @@ Use the same permanent Lovelace resource URL across all releases—do **not** ad
 ## Versioning (from next release)
 
 Use calendar-based versions: `YYYY.MM.0bN`, with a numeric beta counter.
-For example, the **current** beta in October 2026 is `2026.10.0b6`
-(GitHub tag `v2026.10.0b6`), and the next would be `2026.10.0b7`.
+For example, the **current** beta in October 2026 is `2026.10.0b7`
+(GitHub tag `v2026.10.0b7`), and the next would be `2026.10.0b8`.
 For the first beta in a new month, restart from `b1`, e.g.
 `2026.11.0b1`. Keep the `0` patch component and two-digit month.
 
