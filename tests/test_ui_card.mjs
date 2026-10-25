@@ -204,7 +204,7 @@ test('responsive styles use card container size, not browser window width', () =
   assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.ok(source.includes('2026.10.0b6'));
+  assert.ok(source.includes('2026.10.0b7'));
 });
 
 
