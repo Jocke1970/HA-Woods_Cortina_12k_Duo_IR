@@ -366,11 +366,11 @@ test('unavailable mains switch disables main power but not other IR controls', a
 test('panel sequence and mode icons live inside hero; energy is second expander', () => {
   const { card } = createCard('cool');
   const h = card.shadowRoot.innerHTML;
-  const hero = h.indexOf('class="hero"');
+  const hero = h.indexOf('class="hero ');
   const mode = h.indexOf('class="hero-modes"');
   const power = h.indexOf('class="power-cluster"');
   const mains = h.indexOf('class="hero-power-area"');
-  const heroClose = h.indexOf('class="hint"', mains);
+  const heroClose = h.indexOf('class="off-hide"', mains);
   const settings = h.indexOf('data-panel="settings"');
   const consumption = h.indexOf('data-panel="consumption"');
   assert.ok(hero >= 0 && power > hero && mode > power && mains > mode);
