@@ -154,8 +154,7 @@ test('actual rendered buttons have live click listeners and invoke climate', asy
   assert.equal(calls.length, 1);
   assert.equal(calls[0][1], 'set_temperature');
   assert.equal(calls[0][2].temperature, 23);
-  await Promise.resolve();
-  await Promise.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
   assert.ok(card.shadowRoot.innerHTML.includes('Kommandot accepterades'));
   assert.equal(card._busy, false);
 });
