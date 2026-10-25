@@ -92,3 +92,32 @@ unknown mode codes explicitly. A bad/incomplete IR capture is rejected.
 
 A successful packet decoder run is not by itself proof the AC accepts the
 reconstructed HEAT command.
+
+## Analysis of first real RM4 captures (25 October 2026)
+
+The first three learned commands were provided from the real Wood's remote:
+
+| Label in Home Assistant | Decoded frame (B0…B8) |
+|---|---|
+| `woods_cortina.cool_22_low` | `55 62 00 0D 00 00 10 84 58` |
+| `woods_heat_research.heat_22_low` | `55 62 00 0D 00 00 10 84 58` |
+| `woods_heat_research.heat_23_low` | `55 72 00 0E 00 00 10 84 69` |
+
+**Crucial:** The labeled COOL and HEAT captures at 22°C are bit-for-bit identical. These recordings **do not yet establish** the HEAT mode code. The only bytes changed when the target changed from 22 to 23°C are B1 (setpoint), B3 (secondary temperature), and B8 (checksum), exactly as expected from the known algorithm.
+
+Both types of labeled capture used **B6=`0x10`**, with low nibble `0` (not identified by the upstream mode map). The previously verified *generated* COOL 22°C frame is `55 62 00 0D 00 00 11 80 55`. B7=`0x84` in the newly learned frames sets bit 2, called the *auto-clean* flag by the original reverse engineering. This combination could reflect a previously unclassified mode or a capture/remote-state mismatch. Do not assume HEAT=`0x10` yet, and do not auto-enable HEAT in HA.
+
+### Follow-up capture: MODE press, not temperature up
+
+The next experiment should capture the **mode selection button** itself. On the original LCD remote, navigate to the mode immediately **before** the intended final mode, start `remote.learn_command`, then press **MODE exactly once** and verify the remote LCD now shows the intended mode. Capture at least:
+
+- `woods_heat_research.cool_mode_22` — MODE press **into COOL**, setpoint 22°C, low fan.
+- `woods_heat_research.heat_mode_22` — MODE press **into HEAT**, setpoint 22°C, low fan.
+
+Ensure the original remote display actually shows COOL or HEAT **after the press**. If uncertain, also record which mode symbol the physical AC indicates after an original remote transmission (subject to normal compressor protection; heat output need not start immediately).
+
+The two **MODE-transition frames** should expose the real distinction if the mode is encoded per command. A repeated HEAT 22°C temperature-button capture after explicitly selecting HEAT is then useful for confirmation. Keep the AC out of unattended heating until decoded frame + live response are verified.
+
+### BroadLink timing note (separate issue)
+
+The `b64:` packet samples use BroadLink `0x26` format. The codec's current transmit tick divisor `32.84` differs from the physical `~30.45 μs/tick` discussed in python-broadlink's protocol documentation and issue #839. The current generated COOL commands have already been observed to work despite this; do not silently change production TX timing during HEAT discovery. Revisit as a separate supervised regression test before future beta.

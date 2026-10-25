@@ -70,3 +70,42 @@ def test_storage_selects_only_requested_device(tmp_path):
     }
     with pytest.raises(ValueError):
         read_saved_codes(path, "missing", [])
+
+
+# User-provided original-remote RM4 learning results (2026-10-25).
+# These are IR-only data, not the device MAC or the .storage JSON document.
+# Each capture must decode to a stable complete 72-bit protocol frame.
+ORIGINAL_CAPTURES = {
+    "cool_22_low": (
+        "JgCYAAABgqQREBQ+EQ8UPxEREz4RERM+ERAUPRU9EhEQEBEQFD4SEBAQEREREBERERAQEREQERAREREQEBEREBM/FD0SDxU9EREREBEREQ8REREQERAREREPEREREBEQERERDxEQEhAREREPEhAUPRIQEREQEBEQFD4REBERERARERM+ERAREBIQFD0REBQ+FD4SEBAREBERAA0F",
+        "55 62 00 0D 00 00 10 84 58",
+    ),
+    "heat_22_low": (
+        "JgCYAAABgaQSEBM/EBETPhEREz0SERM/ERAUPRQ9EhAREBIQFD4REBEREBEQEBERERAREREPEREQEREQERASEBQ9FD0SEBQ/EQ4SERAQEhAREREPERASDxIQERASDxEQEhAREREQERAREBEREBETPhERERARERAPFT4REBIPERAREBQ+EREREBEREz0SERM+FD4REREQEBEQAA0F",
+        "55 62 00 0D 00 00 10 84 58",
+    ),
+    "heat_23_low": (
+        "JgCYAAABgaQSEBM/EBAUPhEQFD0SERM+ERAUPhQ+Ez8QEBIQE0APEBIQEREREBEPEhAREBERERARDxIQERARERM+FD4UPhEQERAREBEQEg8SEBEQERAREBIQERASEBAQERASEBEQEg8RERAQEhETPhEQEREQERAREz4SEBARERAREBQ9EhARERAREz4UPhEQE0AQDxIQFD8QAA0F",
+        "55 72 00 0E 00 00 10 84 69",
+    ),
+}
+
+
+@pytest.mark.parametrize("label", ORIGINAL_CAPTURES)
+def test_real_broadlink_capture_decoder(label):
+    learned, expected = ORIGINAL_CAPTURES[label]
+    raw = broadlink_to_durations(learned)
+    frame = decode_woods_frame(raw)
+    assert frame.hex(" ").upper() == expected
+    assert frame[0] == 0x55
+    assert frame[6] == 0x10  # Not mapped to a validated HVAC mode.
+    assert frame[7] == 0x84  # Upstream auto-clean flag, interpretation unconfirmed.
+
+
+def test_labeled_cool_and_heat_22_are_identical_important_non_finding():
+    decoded = [decode_woods_frame(broadlink_to_durations(ORIGINAL_CAPTURES[k][0]))
+               for k in ("cool_22_low", "heat_22_low", "heat_23_low")]
+    assert decoded[0] == decoded[1]
+    assert [(i, a, b) for i, (a, b) in enumerate(zip(decoded[1], decoded[2]))
+            if a != b] == [(1, 0x62, 0x72), (3, 0x0D, 0x0E), (8, 0x58, 0x69)]
+    assert "UNKNOWN(-1)" in describe(decoded[0])
