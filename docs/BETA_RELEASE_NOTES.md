@@ -9,8 +9,10 @@
   card (radiator icon, temperature +/-).
 - Codec reproduces four real recorded HEAT frames byte-for-byte:
   state 22°C and 23°C, POWER OFF and POWER ON at 22°C.
-- The newly generated HEAT path via the climate integration still needs
-  physical testing for temperature changes, mode changes and fan speeds.
+- **Follow-up acceptance (2026-10-26):** the owner reports successful
+  physical tests of all combinations, including UI/climate mode changes,
+  target temperatures, fan speeds and power actions. These are manual
+  acceptance results; the current beta is not yet promoted to main.
 
 ## Lovelace card
 

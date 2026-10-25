@@ -387,3 +387,17 @@ setpoint/fan speed, or idempotent power handling after original-remote
 changes. A supervised b6 HACS beta is appropriate; do not enable
 unattended HEAT/frost-protection automations until the newly generated
 path has been observed on the physical appliance.
+
+## Subsequent integrated acceptance test (26 October 2026)
+
+Following HACS beta `2026.10.0b6`, the owner reports successful
+supervised trials of **all UI/climate controls and combinations**
+on the actual Wood's Cortina Duo: modes including HEAT, setpoints,
+fan speed and power. No observed failures were reported in the
+tested scenarios.
+
+Scope: manual user-reported validation of ordinary operation.
+This is not independent appliance feedback, a prolonged soak test,
+or proof that state restoration/desynchronization and unattended
+automation are safe. The remaining planned work before `main` is
+UI polish followed by CI and release acceptance checks.

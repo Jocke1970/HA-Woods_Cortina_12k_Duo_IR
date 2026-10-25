@@ -1,8 +1,8 @@
 # Wood's Cortina 12K Duo IR — Home Assistant
 
-**Experimental beta for supervised testing.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
+**Beta: functional hardware tests accepted; final UI and release checks pending.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
 
-> **Hardware verification:** Generated COOL temperature changes work on the physical Duo AC. The **original-remote HEAT POWER OFF and ON commands have both been replayed successfully via RM4 Mini** (user-confirmed). The new codec reproduces all four captured HEAT state/power frames byte-for-byte. Generated HEAT signals through the climate entity still require supervised hardware regression tests; do not use unattended HEAT automation.
+> **Manual hardware acceptance (2026-10-26):** The owner reports all buttons/functions and mode combinations in the HACS `2026.10.0b6` climate integration and Lovelace card working as intended on the physical Wood's Duo, including HEAT, temperature, fan and on/off behavior. Original-remote HEAT power frames were also replayed successfully through RM4. This is reported supervised functional testing, not direct physical state feedback or proof of unattended reliability. The final UI polish and release checks remain before `main`.
 
 ## Architecture
 
