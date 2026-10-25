@@ -155,3 +155,51 @@ def test_heat_candidate_is_mode_nibble_zero_and_checksum_offset_minus_one():
     assert heat == decode_woods_frame(
         broadlink_to_durations(ORIGINAL_CAPTURES["heat_22_low"][0])
     )
+
+
+# Further original-remote captures recorded on 2026-10-25.
+ADDITIONAL_CAPTURE_SAMPLES = {
+    "cool_mode_verified": ("JgCYAAABgqMSERM+ERAUPRIQEz8REBQ+ERETPhM/EBEREBEQFD4REBERERARERAPEhEQEBIQEREQEBEQEhARERM9FD8REBM+EhEQDxIQEREREBEQEg8RERAQEhAREREPEREREBEREBEQEBERERAUPhARERARERM+FD8QEBEREBERERAQEg8REREQEz8QERM/ERAUPRIQFD4RAA0F", "55 62 00 0D 00 00 11 80 55"),
+    "auto_clean": ("JgCYAAABgKUQEBQ/EBAUPhIQFD4REBQ9ERAUPxM/ERAREBAREz8RDxIQERASDxIQEQ8SEBEQEhARERAPEhARERM+FT4QERM+EREREBEREBAREBEQEhAREBEQERASDxIREBAREBEQEhAREBIOEhETPhIPEREREBEREz4REBERERARDxU9EhAREBEPFD8REBQ+Ez4REREQERERAA0F", "55 62 00 0D 00 00 10 84 58"),
+}
+
+
+@pytest.mark.parametrize("name", ADDITIONAL_CAPTURE_SAMPLES)
+def test_cool_transition_and_auto_clean_recordings_decode(name):
+    learned, hex_frame = ADDITIONAL_CAPTURE_SAMPLES[name]
+    decoded = decode_woods_frame(broadlink_to_durations(learned))
+    assert decoded.hex(" ").upper() == hex_frame
+
+
+def test_verified_cool_matches_generator_and_upstream_cool_22_fixture():
+    decoded = decode_woods_frame(broadlink_to_durations(
+        ADDITIONAL_CAPTURE_SAMPLES["cool_mode_verified"][0]))
+    assert decoded == codec.encode_frame(codec.IRState(
+        power=True, mode=0, temperature=22, fan=0, auto_clean=False))
+
+
+def test_auto_clean_capture_does_not_isolate_feature():
+    """Do not mislabel an identical HEAT capture as a new Auto Clean command."""
+    decoded = decode_woods_frame(broadlink_to_durations(
+        ADDITIONAL_CAPTURE_SAMPLES["auto_clean"][0]))
+    recorded_heat = decode_woods_frame(broadlink_to_durations(
+        TRANSITION_CAPTURES["heat_from_dry"][0]))
+    assert decoded == recorded_heat
+    assert decoded == bytes.fromhex("55 62 00 0D 00 00 10 84 58")
+
+
+def test_heat_candidate_byte_deltas_match_original_22c_and_23c_captures():
+    """Research-only hypothesis; production encoder does NOT permit HEAT."""
+    for temp, expected in (
+        (22, "55 62 00 0D 00 00 10 84 58"),
+        (23, "55 72 00 0E 00 00 10 84 69"),
+    ):
+        cool_frame = bytearray(codec.encode_frame(codec.IRState(
+            power=True, mode=0, temperature=temp, fan=0, auto_clean=False)))
+        cool_frame[6] = 0x10
+        cool_frame[7] |= 0x04
+        cool_frame[8] = (cool_frame[8] - 1 + 4) & 0xFF
+        assert cool_frame.hex(" ").upper() == expected
+    # Non-research production encoder rejects the unsupported heat code.
+    with pytest.raises(ValueError):
+        codec.encode_frame(codec.IRState(power=True, mode=-1))

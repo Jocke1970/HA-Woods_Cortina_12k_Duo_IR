@@ -182,3 +182,37 @@ compare this frame to the DRY and HEAT frames above.
 
 The climate entity **must not offer or send HEAT until its generated
 frames and power-on/power-off transitions have been hardware-validated**.
+
+## Verified COOL and ambiguous Auto Clean capture (25 October 2026)
+
+Two additional real Wood's original-remote RM4 recordings were supplied:
+
+| Label | Complete 9-byte frame | Interpretation |
+|---|---|---|
+| `cool_mode_verified` | `55 62 00 0D 00 00 11 80 55` | Confirmed transition into COOL, 22°C, low fan. **Exact match with original reverse-engineering and our generated COOL fixture.** |
+| `auto_clean` | `55 62 00 0D 00 00 10 84 58` | Identical to earlier transition into HEAT, 22°C; **not independent proof of the Auto Clean command** |
+
+### What these samples prove, and what they do not
+
+- COOL and HEAT transition captures are different, namely COOL B6/B7/B8 = `11 80 55` vs HEAT `10 84 58` at 22°C/low fan.
+- The most plausible candidate for HEAT has the low nibble of B6 set to zero, i.e. inferred internal mode value **−1**, with an observed B7 bit 2 set. The B8 delta (+3 from COOL) matches **−1 mode plus +4 bit-2 feature**.
+- **Crucial ambiguity:** B7 bit 2 is called *Auto Clean* by the upstream non-HEAT decoder. We cannot tell from these captures whether HEAT requires that flag, if Auto Clean is latched in the original remote, or if the user captured Auto Clean while already in HEAT.
+- The `auto_clean` recording has **exactly the same nine bytes** as `heat_from_dry`; therefore a separate Auto Clean action is **not yet isolated or validated**.
+- The genuine *Cortina Duo 12K* manual states that Auto Clean runs an internal cleaning cycle for about three minutes **before shutdown**. We must treat it as a special action, not as a simple persistent HVAC mode. Source: https://www.manualslib.com/manual/2692183/Wood-S-Ac-Cortina-Duo-12k.html?page=16
+
+### Next captures / safe supervised validation
+
+1. Clarify: **which mode** was displayed on the original remote when the `auto_clean` IR signal was learned, and did the AC itself start an internal cleaning cycle?
+2. If the user wants Auto Clean: capture the original **AUTO CLEAN press while already in verified COOL 22°C**, with the previous remote mode/display noted; distinguish the frame from normal COOL. Avoid repeatedly triggering the physical AC just for diagnosis; this starts a cleaning/shutdown cycle.
+3. For HEAT, capture at least a **power key press in HEAT** and ideally HEAT 22°C at another fan speed before implementing turn-on/off transitions.
+4. Test synthetic frames manually only after those controls are understood. In the meantime **keep HEAT out of climate.py** and maintain the installed beta unchanged.
+
+### Experimental codec expectation (research only)
+
+If we take the established COOL frame `55 62 00 0D 00 00 11 80 55`
+and apply the recorded differences, we get the observed HEAT candidate
+`55 62 00 0D 00 00 10 84 58`. At 23°C, the same delta applied to the
+known COOL baseline predicts `55 72 00 0E 00 00 10 84 69`, already
+observed in the earlier real HEAT 23°C capture.
+
+**These are observations / offline tests only. We have not sent generated HEAT from the HA integration.**
