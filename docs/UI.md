@@ -1,15 +1,15 @@
-# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b9
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0
 
-The premium card is **included in the same HACS integration beta**. There
+The premium card is **included in the same stable HACS integration**. There
 is no extra HACS repository, copy into `/config/www`, or additional
 JavaScript dependency. Home Assistant serves its JavaScript from
 `custom_components/woods_cortina/www/woods-cortina-card.js` at the URL
 `/woods_cortina/woods-cortina-card.js`.
 
-## Upgrade from b1 and load the card
+## Install or upgrade and load the card
 
-1. From the already-added HACS custom repository, choose beta
-   `2026.10.0b9` and download/update it.
+1. In HACS, choose tagged stable release `2026.10.0` and install/update.
+   Existing beta users do not need to re-add the dashboard resource.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
