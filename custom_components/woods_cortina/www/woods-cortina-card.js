@@ -391,7 +391,7 @@
                     data-value="${saver ? "none" : "energy_saver"}" aria-pressed="${saver}"
                     ${!cooling || this._busy || mainsOff ? "disabled" : ""}>${saver ? "Avaktivera" : "Aktivera"} Energy Saver</button>
                 </div>
-                <div class="fineprint">HEAT är experimentellt och väntar på fysisk testning via RM4 Mini. Auto Clean och timer finns på TODO.
+                <div class="fineprint">Kyla, värme, avfuktning och fläkt har provats på AC:n. Auto Clean, Sleep och timer är ännu inte aktiverade.
                   IR-kommandon är enkelriktade; kortet visar senast begärt tillstånd.</div>
               </div>
             </details>
