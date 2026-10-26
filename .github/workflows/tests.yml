@@ -1,0 +1,108 @@
+name: Python and frontend checks; beta release
+
+on:
+  push:
+    branches: [dev, beta, main]
+  pull_request:
+    branches: [dev, beta, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies
+        run: python -m pip install pytest
+      - name: Bytecode compile
+        run: python -m compileall -q custom_components
+      - name: Codec, capture, and packaging tests
+        run: python -m pytest -q
+      - name: Validate bundled brand PNG images (including compressed data)
+        run: python -m pytest -q tests/test_brand_assets.py
+      - name: Frontend syntax and interaction tests
+        run: |
+          node --check custom_components/woods_cortina/www/woods-cortina-card.js
+          node --test tests/test_ui_card.mjs
+      - name: Validate HACS and HA manifests
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          hacs = json.loads(Path("hacs.json").read_text())
+          manifest = json.loads(Path("custom_components/woods_cortina/manifest.json").read_text())
+          assert hacs["hide_default_branch"] is True
+          assert manifest["domain"] == "woods_cortina"
+          assert manifest["config_flow"] is True
+          assert manifest["version"] == "2026.10.0"
+          for name in ("icon.png",):
+              assert Path("custom_components/woods_cortina/brand", name).is_file()
+
+          assert "http" in manifest["dependencies"]
+          assert Path("custom_components/woods_cortina/www/woods-cortina-card.js").is_file()
+          assert Path("custom_components/woods_cortina/climate.py").is_file()
+          assert Path("THIRD_PARTY_NOTICES.md").read_text().find("Copyright (c) 2026 Anders") > 0
+          PY
+
+  release-beta:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/beta'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish beta prerelease from the tested beta commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(python -c 'import json; print(json.load(open("custom_components/woods_cortina/manifest.json"))["version"])')"
+          # A stable CalVer snapshot may pass through beta on its way to
+          # main; do NOT publish that build as a prerelease.
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{2}\.0b[1-9][0-9]*$ ]]; then
+            echo "Version ${VERSION} is not a beta; skip prerelease publication."
+            exit 0
+          fi
+          TAG="v${VERSION}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "::error::Release ${TAG} already exists; bump manifest version before another beta merge."
+            exit 1
+          fi
+          gh release create "${TAG}" \
+            --target "${GITHUB_SHA}" \
+            --prerelease \
+            --title "Wood's Cortina IR ${VERSION} (beta)" \
+            --notes-file docs/BETA_RELEASE_NOTES.md
+
+
+  release-main:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish final stable GitHub release from tested main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(python -c 'import json; print(json.load(open("custom_components/woods_cortina/manifest.json"))["version"])')"
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{2}\.0$ ]]; then
+            echo "::error::A main release must have stable YYYY.MM.0 version."
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "::error::Release ${TAG} already exists. No retagging permitted."
+            exit 1
+          fi
+          gh release create "${TAG}" \
+            --target "${GITHUB_SHA}" \
+            --title "Wood's Cortina IR ${VERSION}" \
+            --notes-file docs/MAIN_RELEASE_NOTES.md
