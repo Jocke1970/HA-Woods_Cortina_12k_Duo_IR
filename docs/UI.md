@@ -1,4 +1,4 @@
-# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b8
+# Bundled Lovelace card — Wood's Cortina IR 2026.10.0b9
 
 The premium card is **included in the same HACS integration beta**. There
 is no extra HACS repository, copy into `/config/www`, or additional
@@ -9,7 +9,7 @@ JavaScript dependency. Home Assistant serves its JavaScript from
 ## Upgrade from b1 and load the card
 
 1. From the already-added HACS custom repository, choose beta
-   `2026.10.0b8` and download/update it.
+   `2026.10.0b9` and download/update it.
 2. Restart **Home Assistant** (the Python integration registers the URL
    when starting).
 3. Visit **Settings → Dashboards → ⋮ → Resources** (wording varies by
@@ -207,3 +207,13 @@ alongside the requested setpoint at narrow widths.
 
 The integration's own icon lives under `brand/icon.png` (256 pixels). It is shown by Home Assistant's local brand
 support (HA ≥2026.3) and are separate from `mdi:power` in the card.
+
+## Final notices and tooltip (2026.10.0b9)
+
+Successful HA service-call notices disappear after five seconds. This is
+an **HA acknowledgement**, not confirmation of IR reception. Errors
+remain visible until another operation clears them. The guarded power
+confirmation is explicit and no longer adds a redundant blue notice.
+The power icon's compact caption is AC or Huvudström, and a tooltip
+mentions the long-press action where available. No `?v=` resource
+parameter is used.
