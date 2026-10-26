@@ -4,7 +4,7 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0b8";
+  const VERSION = "2026.10.0b9";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "heat", label: "Värme", icon: "mdi:radiator" },
@@ -180,6 +180,7 @@
       this._busy = false;
       this._error = "";
       this._notice = "";
+      this._noticeTimer = null;
       this._confirmMainsOff = false;
       this._confirmMainsOffAt = 0;
       this._powerPressStartedAt = 0;
@@ -213,6 +214,30 @@
       }
       this._config = { entity: config.entity, name: config.name || "Wood's Cortina", ...extras };
       this._render();
+    }
+
+    disconnectedCallback() {
+      this._clearNoticeTimer();
+    }
+
+    _clearNoticeTimer() {
+      if (this._noticeTimer !== null) {
+        clearTimeout(this._noticeTimer);
+        this._noticeTimer = null;
+      }
+    }
+
+    _setNotice(message, autoDismissMs = 0) {
+      this._clearNoticeTimer();
+      this._notice = message;
+      if (message && autoDismissMs > 0) {
+        this._noticeTimer = setTimeout(() => {
+          this._noticeTimer = null;
+          if (this._notice !== message || this._busy) return;
+          this._notice = "";
+          this._render();
+        }, autoDismissMs);
+      }
     }
 
     set hass(hass) {
@@ -303,7 +328,7 @@
       const powerDescription = mainsOff ? "Slå på huvudström" : mainsOn ?
         (on ? "Stoppa AC via IR" : "Starta AC via IR") : "Huvudström okänd";
       const powerAreaLabel = mainsOff ? "Huvudström" : mainsOn ? "AC" : "Okänd";
-      const powerHint = mainsOn && !on ? "Håll: huvudström" : "";
+      // Long-press instructions live in the button title, not in the compact tile.
       const statusText = mainsOff ? "Ström av" : !on ? "Avstängd" : entity.state === "cool" ? "Kyla aktiv" :
         entity.state === "heat" ? "Värme aktiv" : entity.state === "dry" ? "Avfuktning" : "Fläkt";
       const disabledText = entity.state === "fan_only" || entity.state === "dry"
@@ -327,7 +352,6 @@
                     <ha-icon icon="mdi:power"></ha-icon>
                   </button>
                   <span class="power-hint">${powerAreaLabel}</span>
-                  ${powerHint ? `<span class="power-note">${powerHint}</span>` : ""}
                 </div>
               </div>
               <div class="hero-main">
@@ -484,7 +508,7 @@
         this._confirmMainsOff = false;
         this._confirmMainsOffAt = 0;
         this._error = "";
-        this._notice = "";
+        this._setNotice("");
         this._render();
         return;
       }
@@ -495,7 +519,7 @@
       const attr = entity.attributes || {};
       if (action !== "power" && action !== "mains_off" && mainsOff) {
         this._error = "Huvudströmmen är avstängd. Slå på den innan IR-styrning.";
-        this._notice = "";
+        this._setNotice("");
         this._render();
         return;
       }
@@ -515,7 +539,7 @@
           this._confirmMainsOff = false;
           this._confirmMainsOffAt = 0;
           this._error = "Huvudström får bara brytas när AC:n är stoppad, effekten är låg och efter väntetid.";
-          this._notice = "";
+          this._setNotice("");
           this._render();
           return;
         }
@@ -523,7 +547,7 @@
         if (!this._confirmMainsOff) {
           this._confirmMainsOff = true;
           this._confirmMainsOffAt = Date.now();
-          this._notice = "Bekräfta endast när den fysiska AC:n verkligen har stannat.";
+          this._setNotice(""); // The confirmation strip already gives the safety warning.
           this._error = "";
           this._render();
           return;
@@ -544,7 +568,7 @@
           service = on ? "turn_off" : "turn_on";
         } else {
           this._error = "Huvudströmmens status är okänd – powerknappen är spärrad.";
-          this._notice = "";
+          this._setNotice("");
           this._render();
           return;
         }
@@ -576,15 +600,15 @@
       this._confirmMainsOffAt = 0;
       this._busy = true;
       this._error = "";
-      this._notice = "Skickar begäran till Home Assistant…";
+      this._setNotice("Skickar begäran till Home Assistant…");
       this._render();
       try {
         await this._hass.callService(domain, service, { entity_id: targetId, ...data });
-        this._notice = domain === "switch"
+        this._setNotice(domain === "switch"
           ? "Strömkommando skickat till smartpluggen (väntar på status från HA)."
-          : "Kommandot accepterades av Home Assistant (ingen IR-kvittens).";
+          : "Kommandot accepterades av Home Assistant (ingen IR-kvittens).", 5000);
       } catch (err) {
-        this._notice = "";
+        this._setNotice("");
         this._error = err?.message || "Kunde inte skicka kommandot.";
       } finally {
         this._busy = false;
