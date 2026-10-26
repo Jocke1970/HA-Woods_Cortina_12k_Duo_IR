@@ -39,7 +39,7 @@ jobs:
           assert hacs["hide_default_branch"] is True
           assert manifest["domain"] == "woods_cortina"
           assert manifest["config_flow"] is True
-          assert manifest["version"] == "2026.10.0b8"
+          assert manifest["version"] == "2026.10.0b9"
           for name in ("icon.png",):
               assert Path("custom_components/woods_cortina/brand", name).is_file()
 
@@ -62,6 +62,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="$(python -c 'import json; print(json.load(open("custom_components/woods_cortina/manifest.json"))["version"])')"
+          # A stable CalVer snapshot may pass through beta on its way to
+          # main; do NOT publish that build as a prerelease.
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{2}\.0b[1-9][0-9]*$ ]]; then
+            echo "Version ${VERSION} is not a beta; skip prerelease publication."
+            exit 0
+          fi
           TAG="v${VERSION}"
           if gh release view "${TAG}" >/dev/null 2>&1; then
             echo "::error::Release ${TAG} already exists; bump manifest version before another beta merge."
@@ -72,3 +78,31 @@ jobs:
             --prerelease \
             --title "Wood's Cortina IR ${VERSION} (beta)" \
             --notes-file docs/BETA_RELEASE_NOTES.md
+
+
+  release-main:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish final stable GitHub release from tested main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(python -c 'import json; print(json.load(open("custom_components/woods_cortina/manifest.json"))["version"])')"
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{2}\.0$ ]]; then
+            echo "::error::A main release must have stable YYYY.MM.0 version."
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "::error::Release ${TAG} already exists. No retagging permitted."
+            exit 1
+          fi
+          gh release create "${TAG}" \
+            --target "${GITHUB_SHA}" \
+            --title "Wood's Cortina IR ${VERSION}" \
+            --notes-file docs/MAIN_RELEASE_NOTES.md

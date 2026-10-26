@@ -1,40 +1,29 @@
-# Wood's Cortina 12K Duo IR — 2026.10.0b8 (beta)
+# Wood's Cortina IR — 2026.10.0b9 (final UI beta)
 
-## Compact off-state UI
+## Final UI polish
 
-- OFF now renders a compact Wood's Cortina tile with status and the
-  existing upper-right `mdi:power` control. Temperature widgets, HVAC
-  mode buttons, collapsible settings/consumption, and footer are hidden
-  until the AC is started.
-- Removes the unnecessary `KLIMATKONTROLL · IR` caption.
-- Aligns room temperature beside target using smaller right-aligned
-  `RUM` label.
+- Home Assistant service success acknowledgement disappears **five seconds**
+  after completion. A later command replaces the previous timer. Errors
+  remain until another action or cancellation. No extra dependencies.
+- Power button stays `mdi:power` in the top-right. The compact tile
+  shows only **AC** (or **Huvudström** when mains is off);
+  the long-press hint lives in the button's tooltip/title.
+- No duplicate blue acknowledgement when opening the mains-off
+  confirmation; the explicit confirmation strip gives the warning.
+- Advanced panel wording now acknowledges that all four HVAC modes
+  were physically tested. Auto Clean, Sleep, and timer remain unimplemented.
 
-## Safer main-power long-press
+## Preserved
 
-- **Short tap** on power is unchanged: plug OFF → switch ON, plug ON →
-  climate START/STOP via IR.
-- When plug is ON, **hold power ≥900 ms** to initiate mains-off. The hold
-  itself never sends `switch.turn_off`. A separate **Bekräfta** action
-  is required; **Avbryt** closes the confirmation.
-- The existing climate-OFF, valid measured ≤15 W, ≥60 seconds after the
-  last IR command, and confirmation-timeout guards remain mandatory.
-- Long-hold while AC is running or if readings are missing fails closed;
-  this is not a guarantee that the real compressor has stopped.
+- Compact OFF mode, target and room temperatures, mode colors, fan
+  speed icons, both expandable sections, confirmed mains switch-off
+  safeguards, and the local 256px HA brand icon.
+- No changes to Python IR codec or climate service dispatch.
+- The versionless resource remains
+  `/woods_cortina/woods-cortina-card.js`.
 
-## HA integration branding
+## Release path
 
-- Bundles the previously approved AC + IR waves artwork locally as
-  `custom_components/woods_cortina/brand/icon.png` (256 pixels)
-  following the HA 2026.3+ local brand convention.
-- No additional Lovelace resource, brand CDN, or HACS repository needed.
-
-## Installation
-
-Install tagged prerelease `2026.10.0b8` through HACS; restart HA and
-reload the dashboard. Keep the original resource URL unchanged:
-`/woods_cortina/woods-cortina-card.js` (no `?v=`).
-
-The backend and protocol are identical to the physically validated
-b6/b7 series. User verification of this UX is needed before promotion
-to `main`. IR state remains optimistic, so do not automate mains cut.
+This beta is for final UI check before promoting a **separately versioned**
+`2026.10.0` stable release to `main`. Beta and stable tags are
+immutable. Normal SOP: dev → beta → main.

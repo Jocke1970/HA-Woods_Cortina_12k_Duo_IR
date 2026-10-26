@@ -16,7 +16,8 @@ including heating, mode and temperature changes, fan speeds and power.
   both expansion panels, 4 HVAC mode icons and fan-speed icons.
 - [x] Automated UI regressions verify relocated power control, separate
   switch/climate calls, state-dependent icon help and room/target markup.
-- [ ] Publish UI beta `2026.10.0b8` via HACS (`dev → beta`) and get owner's acceptance of compact OFF state, long-press confirmation, brand icon and responsive room temperature.
+- [x] Owner reviewed actual b8 compact and active cards, long-press confirmation, and local icon using screenshots; requested final copy/banner polish.
+- [ ] Publish last UI beta `2026.10.0b9` through HACS, run CI, and prepare stable `2026.10.0` using PRs and no force tags.
 - [ ] Before `main`, run a clean CI and review version, HACS metadata,
   bundled frontend resource, README and third-party notices.
 - [ ] Promote the accepted beta commit via reviewed PR `beta → main`.
@@ -35,3 +36,12 @@ including heating, mode and temperature changes, fan speeds and power.
 - Auto Clean, timer, Sleep and external-temperature-driven automatic
   control remain on the backlog and are not part of initial main.
 - Do not market this as a verified unattended frost/heating controller.
+
+## b9 finalization
+
+- [x] Remove incorrect 'HEAT untested' help text.
+- [x] Success notifications auto-dismiss after five seconds while errors persist.
+- [x] Power-caption simplified to AC/Huvudström; long-press help in title.
+- [ ] All b9 CI green and GitHub prerelease exists.
+- [ ] Stable `2026.10.0` commit passes CI on `dev`, `beta`, and `main`.
+- [ ] Stable GitHub release is non-prerelease and points to tested `main` SHA.

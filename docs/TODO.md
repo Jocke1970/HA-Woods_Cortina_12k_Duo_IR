@@ -57,7 +57,7 @@ HEAT controls into `beta` before verifying their actual behavior on the AC.
   continue any further polish before `main`.
 - [x] Keep permanent JS resource URL
   `/woods_cortina/woods-cortina-card.js` with no `?v=` suffix.
-- [ ] Install `2026.10.0b8` through HACS to assess new compact OFF card, long-press mains confirmation, shorter room label, and the installed HA brand icon.
+- [x] User supplied screenshots of compact OFF/confirmation and all active HVAC modes from b8 and approved final UI polish before main.
 - [ ] Investigate state desynchronization when AC is switched with its original IR remote. User observed that UI/climate control worked after starting the physical AC with the remote; distinguish physical power state, power-button toggle semantics, and whether non-power IR frames are ignored while off.
 - [ ] Capture original POWER on/off behavior before changing `_apply` or HA `turn_on`/`turn_off` semantics. The remote is one-way and `requested_power` is optimistic; avoid presenting a toggle as a guaranteed state-setting action.
 
@@ -101,3 +101,6 @@ hypotheses.
   directly disconnects mains. Check on an actual touchscreen and mouse.
 - [x] Approved custom AC + IR icon bundled as native HA local brand
   `icon.png` and `icon@2x.png`.
+
+- [x] b9 UI: transient five-second HA success notices, preserved error display, accurate HEAT copy, shorter visible power label.
+- [ ] Stable release `2026.10.0` and verify final CI, HACS metadata, and versionless frontend path.
