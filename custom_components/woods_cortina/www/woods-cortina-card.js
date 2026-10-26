@@ -4,7 +4,7 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0b9";
+  const VERSION = "2026.10.0";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "heat", label: "Värme", icon: "mdi:radiator" },
