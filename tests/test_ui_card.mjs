@@ -7,7 +7,23 @@ const file = new URL('../custom_components/woods_cortina/www/woods-cortina-card.
 const source = readFileSync(file, 'utf8');
 const registry = new Map();
 const events = [];
+const scheduled = new Map();
+let timerSerial = 0;
+const fireScheduled = (delay) => {
+  for (const [id, task] of [...scheduled.entries()]) {
+    if (task.delay === delay) {
+      scheduled.delete(id);
+      task.callback();
+    }
+  }
+};
 const context = {
+  setTimeout: (callback, delay) => {
+    const id = ++timerSerial;
+    scheduled.set(id, { callback, delay });
+    return id;
+  },
+  clearTimeout: (id) => { scheduled.delete(id); },
   HTMLElement: class {
     attachShadow() {
       const shadowRoot = {
@@ -210,7 +226,7 @@ test('responsive styles use card container size, not browser window width', () =
   assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.ok(source.includes('2026.10.0b8'));
+  assert.ok(source.includes('2026.10.0b9'));
 });
 
 
@@ -634,4 +650,72 @@ test('keyboard hold is supported with Space; quick Enter activates normal power'
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], 'climate');
   assert.equal(calls[0][1], 'turn_on');
+});
+
+
+test('five-second success confirmation disappears without a new HA update', async () => {
+  scheduled.clear();
+  const { card, calls } = createCard('cool');
+  await card._handleClick(click('temp', '1'));
+  assert.equal(calls.length, 1);
+  assert.ok(card.shadowRoot.innerHTML.includes('Kommandot accepterades'));
+  assert.equal([...scheduled.values()].filter(t => t.delay === 5000).length, 1);
+  fireScheduled(5000);
+  assert.ok(!card.shadowRoot.innerHTML.includes('Kommandot accepterades'));
+  assert.equal(card._notice, '');
+});
+
+test('five-second timer is replaced for newer commands; stale timer cannot clear it', async () => {
+  scheduled.clear();
+  const { card } = createCard('cool');
+  await card._handleClick(click('temp', '1'));
+  const previousId = [...scheduled.keys()][0];
+  await card._handleClick(click('temp', '-1'));
+  assert.equal(scheduled.size, 1);
+  assert.ok(!scheduled.has(previousId));
+  assert.ok(card.shadowRoot.innerHTML.includes('Kommandot accepterades'));
+  fireScheduled(5000);
+  assert.equal(card._notice, '');
+});
+
+test('switch success is transient, while HA service errors remain until handled', async () => {
+  scheduled.clear();
+  const { card } = createCard('off');
+  card._hass.states['switch.woods_cortina_silent_12k_duo'].state = 'off';
+  card._render();
+  await card._handleClick(click('power'));
+  assert.ok(card.shadowRoot.innerHTML.includes('Strömkommando skickat'));
+  fireScheduled(5000);
+  assert.ok(!card.shadowRoot.innerHTML.includes('Strömkommando skickat'));
+  card._hass.callService = async () => { throw new Error('Permanent testfel'); };
+  await card._handleClick(click('power'));
+  assert.ok(card.shadowRoot.innerHTML.includes('Permanent testfel'));
+  assert.equal(scheduled.size, 0);
+  fireScheduled(5000);
+  assert.ok(card.shadowRoot.innerHTML.includes('Permanent testfel'));
+});
+
+test('on disconnect pending notification timers are cleared', async () => {
+  scheduled.clear();
+  const { card } = createCard('cool');
+  await card._handleClick(click('temp', '1'));
+  assert.equal(scheduled.size, 1);
+  card.disconnectedCallback();
+  assert.equal(scheduled.size, 0);
+});
+
+test('short visible power label and keep long-press help in title only', () => {
+  const { card } = stoppedCard();
+  const html = card.shadowRoot.innerHTML;
+  assert.ok(html.includes('<span class="power-hint">AC</span>'));
+  assert.ok(!html.includes('class="power-note"'));
+  assert.ok(!html.includes('>Håll: huvudström</span>'));
+  assert.ok(html.includes('Håll 1 sekund för huvudström'));
+});
+
+test('advanced information correctly records hardware-tested HEAT', () => {
+  const { card } = createCard('heat');
+  const html = card.shadowRoot.innerHTML;
+  assert.ok(html.includes('Kyla, värme, avfuktning och fläkt har provats på AC:n.'));
+  assert.ok(!html.includes('väntar på fysisk testning'));
 });
