@@ -17,9 +17,9 @@ including heating, mode and temperature changes, fan speeds and power.
 - [x] Automated UI regressions verify relocated power control, separate
   switch/climate calls, state-dependent icon help and room/target markup.
 - [x] Owner reviewed actual b8 compact and active cards, long-press confirmation, and local icon using screenshots; requested final copy/banner polish.
-- [ ] Publish last UI beta `2026.10.0b9` through HACS, run CI, and prepare stable `2026.10.0` using PRs and no force tags.
-- [ ] Before `main`, run a clean CI and review version, HACS metadata,
-  bundled frontend resource, README and third-party notices.
+- [x] Last UI beta `2026.10.0b9` published and verified by Actions; prepared stable `2026.10.0` in dev.
+- [x] Reviewed stable version/manifest, HACS metadata, bundled frontend resource,
+  README and third-party notices; final branch CI remains mandatory.
 - [ ] Promote the accepted beta commit via reviewed PR `beta → main`.
   Use the agreed calendar version for the stable release (e.g.
   `2026.10.0`, without `bN`, **if promoted in October 2026**).
@@ -42,6 +42,6 @@ including heating, mode and temperature changes, fan speeds and power.
 - [x] Remove incorrect 'HEAT untested' help text.
 - [x] Success notifications auto-dismiss after five seconds while errors persist.
 - [x] Power-caption simplified to AC/Huvudström; long-press help in title.
-- [ ] All b9 CI green and GitHub prerelease exists.
+- [x] All b9 CI green and GitHub prerelease published.
 - [ ] Stable `2026.10.0` commit passes CI on `dev`, `beta`, and `main`.
 - [ ] Stable GitHub release is non-prerelease and points to tested `main` SHA.

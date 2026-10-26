@@ -1,8 +1,8 @@
 # Wood's Cortina 12K Duo IR — Home Assistant
 
-**Beta: functional hardware tests accepted; final UI and release checks pending.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
+**First stable release: `2026.10.0`.** Custom Home Assistant climate integration for Wood's Cortina 12K Duo controlled using a **BroadLink RM4 Mini** through Home Assistant's existing BroadLink `remote` entity.
 
-> **Manual hardware acceptance (2026-10-26):** The owner reports all buttons/functions and mode combinations in the HACS `2026.10.0b6` climate integration and Lovelace card working as intended on the physical Wood's Duo, including HEAT, temperature, fan and on/off behavior. Original-remote HEAT power frames were also replayed successfully through RM4. This is reported supervised functional testing, not direct physical state feedback or proof of unattended reliability. The final UI polish and release checks remain before `main`.
+> **Manual hardware acceptance (2026-10-26):** The owner reports all buttons/functions and mode combinations in the HACS `2026.10.0b6` climate integration and Lovelace card working as intended on the physical Wood's Duo, including HEAT, temperature, fan and on/off behavior. Original-remote HEAT power frames were also replayed successfully through RM4. This is reported supervised functional testing, not direct physical state feedback or proof of unattended reliability. The final UI changes have passed automated frontend regression checks, including transient success notifications.
 
 ## Architecture
 
@@ -16,21 +16,21 @@ The integration intentionally **does not** communicate directly with the BroadLi
 
 The IR protocol encoder is adapted from [srednak/woods-protocol](https://github.com/srednak/woods-protocol), copyright © 2026 Anders, MIT license. The original project reverse-engineered the Wood's Cortina remote, developed the checksum/byte tables and documented pulse timing. Full attribution and MIT license text are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). This project is not affiliated with Wood's or the original author.
 
-## Install for bench testing
+## Install through HACS
 
 1. First configure the RM4 Mini with Home Assistant's official [BroadLink integration](https://www.home-assistant.io/integrations/broadlink/). Verify that a `remote.***` entity exists.
 2. In **HACS**, open the three-dot menu → **Custom repositories**. Add `https://github.com/Jocke1970/HA-Woods_Cortina_12k_Duo_IR` as category **Integration**.
-3. Open the new Wood's Cortina IR repository in HACS; enable **Show beta versions** / pre-releases if necessary, and explicitly download the GitHub prerelease `2026.10.0b9`. Do **not** install the default `main` branch or use `dev`.
+3. Select the **stable release `2026.10.0`** in HACS. No beta option is required; do not install from `dev`.
 4. Restart Home Assistant. Go to **Settings → Devices & services → Add integration** and search for **Wood's Cortina IR**.
 5. Choose BroadLink `remote.rm4_mini` and optionally a room-temperature sensor.
 6. Begin with a **supervised** IR test (Cool / 22°C / Low fan). Compare the result with the original remote. Do not enable automations until the signal is validated.
 
-There is no need for the upstream ESPHome firmware. Install **only GitHub beta releases through HACS**. This is not yet a production-ready controller.
+There is no need for the upstream ESPHome firmware. Install tagged releases through HACS. This stable release supports **manual and supervised control**, not unattended safety-critical heating.
 
 ## Implemented now
 
 - Config flow to choose existing HA remote and optional room-temperature entity.
-- `climate` entity: Off, Cool, **Heat (supervised beta)**, Dry, Fan only; setpoint 17–30°C; Low/Medium/High fan; Swing On/Off; Energy Saver preset in COOL.
+- `climate` entity: Off, Cool, **Heat**, Dry, Fan only; setpoint 17–30°C; Low/Medium/High fan; Swing On/Off; Energy Saver preset in COOL.
 - A Python 72-bit codec and BroadLink packet packing; power key uses a distinct IR frame.
 - Optimistic/assumed state and last-send metadata; no fabricated compressor/IR-reception status.
 - Unit tests against captured bytes documented in the source repository and packet invariants.
@@ -62,8 +62,7 @@ Use the same permanent Lovelace resource URL across all releases—do **not** ad
 ## Versioning (from next release)
 
 Use calendar-based versions: `YYYY.MM.0bN`, with a numeric beta counter.
-For example, the **current** beta in October 2026 is `2026.10.0b9`
-(GitHub tag `v2026.10.0b9`). The stable release will be `2026.10.0`.
+For example, the first stable release in October 2026 is `2026.10.0` (GitHub tag `v2026.10.0`). Earlier `bN` tags remain immutable historical prereleases.
 For the first beta in a new month, restart from `b1`, e.g.
 `2026.11.0b1`. Keep the `0` patch component and two-digit month.
 
@@ -107,3 +106,16 @@ Service-call success banners automatically disappear after five seconds,
 while failure messages persist. A compact header shows only AC/Huvudström
 beneath the power icon; long-press help is in the button tooltip. HEAT
 has been physically tested, and the advanced copy now reflects that.
+
+## Stable release 2026.10.0
+
+Promotes the manually hardware-accepted HEAT/COOL/DRY/FAN behavior and
+the final responsive dashboard card from the tested beta series. The
+card is compact when stopped and shows guarded mains control, fan-speed
+icons and live power/daily/monthly energy. Successful HA service notices
+disappear after five seconds, but errors remain.
+
+**Safety:** Infrared is one-way, and the climate entity displays requested
+state, not a verified compressor status. Check the real AC before any
+mains disconnection. Avoid unattended frost protection or heating control
+without independently validated feedback and shutdown safeguards.

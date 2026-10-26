@@ -103,4 +103,4 @@ hypotheses.
   `icon.png` and `icon@2x.png`.
 
 - [x] b9 UI: transient five-second HA success notices, preserved error display, accurate HEAT copy, shorter visible power label.
-- [ ] Stable release `2026.10.0` and verify final CI, HACS metadata, and versionless frontend path.
+- [ ] Stable release `2026.10.0`: CI on all branches, main GitHub release and unchanged versionless resource URL.
