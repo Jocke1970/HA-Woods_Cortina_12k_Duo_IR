@@ -497,7 +497,7 @@ test('header contains exactly one mdi:power button in the upper right corner', (
     card._render();
     const html = card.shadowRoot.innerHTML;
     const head = html.indexOf('class="head"');
-    const headerEnd = html.indexOf('</div>\n              <div class="hero-main">', head);
+    const headerEnd = html.indexOf('class="hero-main"', head);
     const button = html.match(/<button[^>]*data-action="power"[^>]*>[\s\S]*?<\/button>/);
     assert.ok(button, 'power button is present');
     assert.equal((html.match(/data-action="power"/g) || []).length, 1);
