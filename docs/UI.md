@@ -262,3 +262,15 @@ existing card which retains a manually saved width, open its editor,
 select **Layout → Use recommended size**, and save. Alternatively,
 turn that option off and set width explicitly. For YAML dashboards,
 review any existing `grid_options` overrides.
+
+## Same full Section width for both layouts — 2026.11.0b3
+
+Mini and Standard now both recommend a full **12-column** Section
+width (minimum 9), with `rows: auto`. Mini stays shorter with
+just title, status, power and three metrics; it no longer defaults
+to half the width. The previous narrow Mini wrapping is kept for
+manually resized cards.
+
+If an existing Mini stays narrow, reset its saved layout via
+**Edit card → Layout → Use recommended size**, or explicitly select
+12 columns. The YAML `size: mini` setting is unchanged.
