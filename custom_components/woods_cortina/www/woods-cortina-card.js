@@ -4,7 +4,8 @@
 (() => {
   "use strict";
   const TAG = "woods-cortina-card";
-  const VERSION = "2026.10.0";
+  const EDITOR_TAG = "woods-cortina-card-editor";
+  const VERSION = "2026.11.0b1";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "heat", label: "Värme", icon: "mdi:radiator" },
@@ -73,6 +74,24 @@
     .confirm-action{background:#b75b42;border:1px solid #ffb28d}
     .confirm-cancel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3)}
     .power-note{color:#d2e9f5;font-size:9px;line-height:1.25;text-align:center}
+    /* Dedicated Mini size, independent from the Standard OFF/standby state. */
+    ha-card.mini .shell{padding:clamp(8px,2.8cqi,13px)}
+    ha-card.mini .hero{padding:clamp(12px,3.7cqi,16px);border-radius:15px}
+    ha-card.mini .hero-main,ha-card.mini .hero-controls,ha-card.mini .telemetry-note{display:none}
+    ha-card.mini .off-hide{display:none}
+    ha-card.mini .name{margin:0;font-size:clamp(14px,4.4cqi,17px)}
+    ha-card.mini .status{margin-top:6px;padding:4px 9px;font-size:10px}
+    ha-card.mini .power{width:42px;height:42px;min-height:42px;border-radius:12px}
+    ha-card.mini .power-cluster{width:60px}
+    ha-card.mini .power-hint{font-size:9px}
+    .mini-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.22)}
+    .mini-metric{min-width:0;display:flex;flex-direction:column;gap:5px;padding:0 clamp(5px,2.2cqi,10px)}
+    .mini-metric:first-child{padding-left:0}
+    .mini-metric+.mini-metric{border-left:1px solid rgba(255,255,255,.22)}
+    .mini-label{font-size:clamp(9px,2.4cqi,10px);color:#c8e3f1;line-height:1.2}
+    .mini-value{font-size:clamp(12px,4cqi,17px);font-weight:750;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+    .mini-subtitle{margin-top:9px;font-size:9px;line-height:1.3;color:#bfd6e5}
+    @container (max-width:220px){ha-card.mini .mini-value{font-size:12px}ha-card.mini .mini-metric{padding-inline:5px}}
 
     .head{position:relative;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:10px}
     .brand{min-width:0;flex:1;max-width:100%}
@@ -171,6 +190,66 @@
 
   `;
 
+  // Native Lovelace visual editor, similar to the Wecamp Standard / Mini selector.
+  class WoodsCortinaCardEditor extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" });
+      this._config = {};
+    }
+
+    set hass(hass) { this._hass = hass; }
+    setConfig(config) {
+      this._config = { ...config };
+      this._render();
+    }
+
+    _render() {
+      const cfg = this._config;
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host{display:block;color:var(--primary-text-color);font-family:var(--primary-font-family,system-ui,sans-serif)}
+          .editor{display:grid;gap:15px;padding:12px 0}
+          label{display:grid;gap:6px;font-size:13px;font-weight:650}
+          input,select{width:100%;min-height:42px;box-sizing:border-box;padding:8px 11px;border-radius:9px;font:inherit;
+            background:var(--card-background-color,#fff);color:var(--primary-text-color,#222);border:1px solid var(--divider-color,#ccc)}
+          .hint{font-size:11px;color:var(--secondary-text-color,#777);line-height:1.45}
+        </style>
+        <div class="editor">
+          <label>Klimatentitet<input data-field="entity" value="${htmlEscape(cfg.entity || "")}" /></label>
+          <label>Namn<input data-field="name" value="${htmlEscape(cfg.name || "Wood\'s Cortina")}" /></label>
+          <label>Kortstorlek<select data-field="size">
+            <option value="standard" ${cfg.size !== "mini" ? "selected" : ""}>Standard</option>
+            <option value="mini" ${cfg.size === "mini" ? "selected" : ""}>Mini</option>
+          </select></label>
+          <div class="hint">Mini visar driftläge, börvärde, rumstemperatur och effekt med samma skyddade powerknapp. Övriga entiteter behålls från kortets YAML.</div>
+        </div>`;
+      this.shadowRoot.querySelectorAll("[data-field]").forEach((field) => {
+        field.addEventListener("change", () => this._change(field.dataset.field, field.value));
+      });
+    }
+
+    _change(field, value) {
+      if (!["size", "entity", "name"].includes(field)) return;
+      const next = { ...this._config };
+      if (field === "size") {
+        if (!["mini", "standard"].includes(value)) return;
+        if (value === "mini") next.size = "mini";
+        else delete next.size;
+      } else {
+        const text = String(value).trim();
+        if (field === "entity" && !text.startsWith("climate.")) return;
+        if (text) next[field] = text;
+        else if (field === "name") delete next.name;
+        else return;
+      }
+      this._config = next;
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config: next }, bubbles: true, composed: true,
+      }));
+    }
+  }
+
   class WoodsCortinaCard extends HTMLElement {
     constructor() {
       super();
@@ -199,6 +278,8 @@
       return { entity: "climate.wood_s_cortina_12k_duo", name: "Wood's Cortina", ...DEFAULT_SENSORS };
     }
 
+    static getConfigElement() { return document.createElement(EDITOR_TAG); }
+
     setConfig(config) {
       if (!config || typeof config.entity !== "string" || !config.entity.startsWith("climate.")) {
         throw new Error("Wood's Cortina: ange ett climate-entity-id i entity.");
@@ -212,7 +293,10 @@
         }
         extras[key] = value;
       }
-      this._config = { entity: config.entity, name: config.name || "Wood's Cortina", ...extras };
+      if (config.size !== undefined && !["standard", "mini"].includes(config.size)) {
+        throw new Error("Wood's Cortina: size måste vara standard eller mini.");
+      }
+      this._config = { entity: config.entity, name: config.name || "Wood's Cortina", size: config.size === "mini" ? "mini" : "standard", ...extras };
       this._render();
     }
 
@@ -250,8 +334,8 @@
       this._render();
     }
 
-    getCardSize() { return !this._isActiveMode(this._entity()) || this._mainsEntity()?.state === "off" ? 2 : 7 + (this._advanced ? 2 : 0) + (this._consumption ? 2 : 0); }
-    getGridOptions() { return { columns: 6, min_columns: 3, rows: this.getCardSize() }; }
+    getCardSize() { if (this._config?.size === "mini") return 3; return !this._isActiveMode(this._entity()) || this._mainsEntity()?.state === "off" ? 2 : 7 + (this._advanced ? 2 : 0) + (this._consumption ? 2 : 0); }
+    getGridOptions() { return this._config?.size === "mini" ? { columns: 4, min_columns: 3, rows: 3 } : { columns: 6, min_columns: 3, rows: this.getCardSize() }; }
 
     _entity() {
       return this._hass && this._config ? this._hass.states[this._config.entity] : null;
@@ -336,7 +420,7 @@
         : !on ? "Starta kyla eller värme för att ändra temperaturen." : "Temperaturen regleras av AC:ns egen termostat.";
       this.shadowRoot.innerHTML = `
         <style>${CSS}</style>
-        <ha-card class="${compact ? "compact" : ""}">
+        <ha-card class="${this._config.size === "mini" ? "mini" : compact ? "compact" : ""}">
           <div class="shell">
             <div class="hero ${compact ? "compact" : ""}" data-mode="${htmlEscape(heroMode)}">
               <div class="head">
@@ -354,6 +438,17 @@
                   <span class="power-hint">${powerAreaLabel}</span>
                 </div>
               </div>
+              ${this._config.size === "mini" ? `
+                <section class="mini-metrics" aria-label="Wood\'s Cortina snabböversikt">
+                  <div class="mini-metric"><span class="mini-label">${cooling || heating ? "Börvärde" : "Senaste bör"}</span>
+                    <strong class="mini-value">${htmlEscape(fmt(target))} °C</strong></div>
+                  <div class="mini-metric"><span class="mini-label">Rum</span>
+                    <strong class="mini-value">${htmlEscape(room)}</strong></div>
+                  <div class="mini-metric"><span class="mini-label">Effekt</span>
+                    <strong class="mini-value">${htmlEscape(watts)}</strong></div>
+                </section>
+                <div class="mini-subtitle">IR-styrning utan statuskvittens</div>
+              ` : ""}
               <div class="hero-main">
                 <div class="temperature-stats">
                   <div class="setpoint-box">
@@ -617,6 +712,7 @@
     }
   }
 
+  if (!customElements.get(EDITOR_TAG)) customElements.define(EDITOR_TAG, WoodsCortinaCardEditor);
   if (!customElements.get(TAG)) customElements.define(TAG, WoodsCortinaCard);
   if (typeof window !== "undefined") {
     window.customCards = window.customCards || [];
@@ -624,7 +720,7 @@
       window.customCards.push({
         type: TAG,
         name: "Wood's Cortina",
-        description: "Klimatkontroll för Wood's Cortina IR via RM4 Mini.",
+        description: "Klimatkontroll för Wood's Cortina IR via RM4 Mini (Standard och Mini).",
         preview: false,
       });
     }
