@@ -5,7 +5,7 @@
   "use strict";
   const TAG = "woods-cortina-card";
   const EDITOR_TAG = "woods-cortina-card-editor";
-  const VERSION = "2026.11.0b2";
+  const VERSION = "2026.11.0b3";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "heat", label: "Värme", icon: "mdi:radiator" },
@@ -347,12 +347,10 @@
     }
 
     getCardSize() { if (this._config?.size === "mini") return 3; return !this._isActiveMode(this._entity()) || this._mainsEntity()?.state === "off" ? 2 : 7 + (this._advanced ? 2 : 0) + (this._consumption ? 2 : 0); }
-    // Sections has twelve columns: Standard fills the section, Mini uses
-    // half its width. Auto-height tracks expanded settings and standby.
+    // Both variants fill the same 12-column HA Section width.
+    // Mini keeps its smaller content and short vertical height.
     getGridOptions() {
-      return this._config?.size === "mini"
-        ? { columns: 6, min_columns: 6, rows: "auto" }
-        : { columns: 12, min_columns: 9, rows: "auto" };
+      return { columns: 12, min_columns: 9, rows: "auto" };
     }
 
     _entity() {

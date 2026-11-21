@@ -1,31 +1,32 @@
-# Wood's Cortina IR — 2026.11.0b2 (beta)
+# Wood's Cortina IR — 2026.11.0b3 (beta)
 
-## Fix: Sections dashboard card sizes
+## Same width for Standard and Mini
 
-- **Standard now recommends 12 columns** (full section), minimum 9.
-- **Mini now recommends 6 columns** (half section), minimum 6.
-- Both use `rows: auto` so their heights track their content.
-- Mini wraps to two temperature values plus a full-width power row
-  below 260px container width. This prevents cramped labels and clipped
-  readings like `351,2 W` in narrow dashboard columns.
-- These are default recommendations. Existing cards with saved
-  `grid_options` overrides can use **Layout → Use recommended size**
-  in the HA editor, or choose 12/6 columns manually.
+After reviewing the actual Home Assistant dashboard, the Mini card
+now recommends **the same 12-column Section width as Standard**,
+with minimum 9 columns and automatic row height. The Mini still keeps
+its shorter, simpler visual layout and three key metrics: latest
+setpoint, room temperature and power. At a full section width, the
+three Mini metrics can display side by side; the previously added
+narrow-card wrapping remains available when manually resized.
 
-## Unchanged
+### Existing dashboard cards
 
-- Standard/Mini editor selector and `size: mini` YAML option.
-- Modes, status, target and room temperatures, instantaneous power,
-  current power state, five-second HA acknowledgements and errors.
-- Safe mains/AC power-button behavior, explicit confirmation and
-  mandatory 60-second wait + low-power checks for any manual mains cut.
-- Python IR codec, Home Assistant entities, bundled brand icon,
-  permanent JS resource URL and stable `main` version `2026.10.0`.
+Saved `grid_options` overrides may still force a narrower width.
+Open the card's editor and choose **Layout → Use recommended size**,
+or manually set both cards to 12 columns.
 
-## HACS beta
+### Unchanged
 
-Install tagged prerelease `v2026.11.0b2` through HACS. Restart Home
-Assistant and refresh your dashboard. Keep the existing JavaScript
-module resource `/woods_cortina/woods-cortina-card.js` without `?v=`.
-The change is limited to UI sizing and presentation; validate the final
-layout on your dashboard before any promotion to `main`.
+- IR codec, climate commands and smartplug mains safety guards.
+- Shared, context-sensitive power icon and protected long-press.
+- Standard/Mini visual selector; `size: mini` YAML setting.
+- JS module resource URL `/woods_cortina/woods-cortina-card.js`
+  (without `?v=`).
+- Stable `main` remains `2026.10.0`.
+
+## Installation
+
+Install prerelease `v2026.11.0b3` through HACS, restart
+Home Assistant and reload the dashboard. Confirm both card layouts
+look right on your actual dashboard before stable promotion.

@@ -144,3 +144,11 @@ two temperature readings at narrow widths to prevent clipping.
 If an existing dashboard card has a saved `grid_options` override,
 re-enable **Layout → Use recommended size** to pick up the new sizes.
 Otherwise select 12 columns for Standard or 6 for Mini manually.
+
+### Mini full-width default (2026.11.0b3)
+
+Standard and Mini now recommend **the same full 12-column Section
+width**, while Mini retains its compact height and simpler content.
+Existing manually saved `grid_options` can be reset in the card's
+**Layout → Use recommended size** setting. This replaces the b2
+half-width Mini default; no backend or power-control changes.

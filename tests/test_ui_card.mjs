@@ -228,7 +228,7 @@ test('responsive styles use card container size, not browser window width', () =
   assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.ok(source.includes('2026.11.0b2'));
+  assert.ok(source.includes('2026.11.0b3'));
 });
 
 
@@ -741,8 +741,8 @@ test('Mini and Standard use independent card layouts without changing default si
   assert.ok(markup.includes('>765,4 W</strong>'));
   assert.ok(markup.includes('mdi:power'));
   assert.equal(card.getCardSize(), 3);
-  assert.equal(card.getGridOptions().columns, 6);
-  assert.equal(card.getGridOptions().min_columns, 6);
+  assert.equal(card.getGridOptions().columns, 12);
+  assert.equal(card.getGridOptions().min_columns, 9);
   assert.equal(card.getGridOptions().rows, 'auto');
   assert.ok(source.includes('ha-card.mini .hero-main,ha-card.mini .hero-controls,ha-card.mini .telemetry-note{display:none}'));
   assert.ok(source.includes('ha-card.mini .off-hide{display:none}'));
@@ -831,7 +831,7 @@ test('Mini dashboard editor switches size and keeps existing entity settings int
 });
 
 
-test('section grid defaults fill the Standard width and allow readable Mini', () => {
+test('both card sizes recommend identical full Section width', () => {
   const standard = createCard('cool').card;
   assert.deepEqual(JSON.parse(JSON.stringify(standard.getGridOptions())), {
     columns: 12, min_columns: 9, rows: 'auto',
@@ -839,8 +839,10 @@ test('section grid defaults fill the Standard width and allow readable Mini', ()
   const mini = createCard('cool').card;
   mini.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', size: 'mini' });
   assert.deepEqual(JSON.parse(JSON.stringify(mini.getGridOptions())), {
-    columns: 6, min_columns: 6, rows: 'auto',
+    columns: 12, min_columns: 9, rows: 'auto',
   });
+  assert.deepEqual(mini.getGridOptions(), standard.getGridOptions());
+  assert.ok(mini.getCardSize() < standard.getCardSize());
   assert.ok(source.includes('@container (max-width:260px)'));
   assert.ok(source.includes('ha-card.mini .mini-metric:nth-child(3)'));
   assert.ok(source.includes('grid-column:1/-1'));
