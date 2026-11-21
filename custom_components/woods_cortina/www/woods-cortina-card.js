@@ -5,7 +5,7 @@
   "use strict";
   const TAG = "woods-cortina-card";
   const EDITOR_TAG = "woods-cortina-card-editor";
-  const VERSION = "2026.11.0b1";
+  const VERSION = "2026.11.0b2";
   const MODES = [
     { value: "cool", label: "Kyla", icon: "mdi:snowflake" },
     { value: "heat", label: "Värme", icon: "mdi:radiator" },
@@ -91,7 +91,19 @@
     .mini-label{font-size:clamp(9px,2.4cqi,10px);color:#c8e3f1;line-height:1.2}
     .mini-value{font-size:clamp(12px,4cqi,17px);font-weight:750;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
     .mini-subtitle{margin-top:9px;font-size:9px;line-height:1.3;color:#bfd6e5}
-    @container (max-width:220px){ha-card.mini .mini-value{font-size:12px}ha-card.mini .mini-metric{padding-inline:5px}}
+    /* At half-section width, let the power reading use its own row,
+       rather than clipping values in three ~50px columns. */
+    @container (max-width:260px){
+      ha-card.mini .mini-metrics{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:9px}
+      ha-card.mini .mini-metric{padding-inline:8px}
+      ha-card.mini .mini-metric:first-child{padding-left:0}
+      ha-card.mini .mini-metric:nth-child(3){
+        grid-column:1/-1;display:flex;flex-direction:row;align-items:center;
+        justify-content:space-between;gap:10px;padding:9px 0 0;margin-top:1px;
+        border-left:0;border-top:1px solid rgba(255,255,255,.22)
+      }
+      ha-card.mini .mini-value{font-size:clamp(12px,4cqi,16px)}
+    }
 
     .head{position:relative;display:flex;flex-direction:row;align-items:flex-start;justify-content:space-between;gap:10px}
     .brand{min-width:0;flex:1;max-width:100%}
@@ -335,7 +347,13 @@
     }
 
     getCardSize() { if (this._config?.size === "mini") return 3; return !this._isActiveMode(this._entity()) || this._mainsEntity()?.state === "off" ? 2 : 7 + (this._advanced ? 2 : 0) + (this._consumption ? 2 : 0); }
-    getGridOptions() { return this._config?.size === "mini" ? { columns: 4, min_columns: 3, rows: 3 } : { columns: 6, min_columns: 3, rows: this.getCardSize() }; }
+    // Sections has twelve columns: Standard fills the section, Mini uses
+    // half its width. Auto-height tracks expanded settings and standby.
+    getGridOptions() {
+      return this._config?.size === "mini"
+        ? { columns: 6, min_columns: 6, rows: "auto" }
+        : { columns: 12, min_columns: 9, rows: "auto" };
+    }
 
     _entity() {
       return this._hass && this._config ? this._hass.states[this._config.entity] : null;
