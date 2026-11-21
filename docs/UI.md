@@ -241,3 +241,24 @@ confirmation are shared across both layouts. HA's one-way IR state is
 not proof of physical compressor shutdown. All previous entity overrides
 (`power_entity`, `power_sensor`, daily/monthly energy) are preserved
 when choosing a layout in the visual editor.
+
+## Fix for narrow cards in Home Assistant Sections — 2026.11.0b2
+
+Home Assistant's Section layout has **12 columns**. The first Mini beta
+specified widths of 6 columns for Standard and 4 for Mini, so the actual
+cards were compressed when displayed side by side.
+
+The recommended Section sizes are now:
+
+| Layout | Recommended width | Minimum width | Height |
+|---|---:|---:|---|
+| Standard | 12 columns (full section) | 9 | Auto |
+| Mini | 6 columns (half section) | 6 | Auto |
+
+Mini changes to a two-column temperature row with the power reading on
+a separate line for cards narrower than 260px, avoiding clipped values.
+These are **recommended**, not hard-coded widths. To apply them to an
+existing card which retains a manually saved width, open its editor,
+select **Layout → Use recommended size**, and save. Alternatively,
+turn that option off and set width explicitly. For YAML dashboards,
+review any existing `grid_options` overrides.
