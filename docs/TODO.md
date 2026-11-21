@@ -120,3 +120,7 @@ hypotheses.
 - [ ] Check already-added Standard/Mini cards in HA Layout editor;
   reset Use recommended size if `grid_options` was saved.
 - [ ] Real visual acceptance of `2026.11.0b2` before stable promotion.
+
+- [x] b3 Section sizing: Mini and Standard now both recommend
+  full 12-column width, with Mini remaining compact vertically.
+- [ ] Review the full-width Mini in HA after installing b3 beta.
