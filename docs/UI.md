@@ -217,3 +217,27 @@ confirmation is explicit and no longer adds a redundant blue notice.
 The power icon's compact caption is AC or Huvudström, and a tooltip
 mentions the long-press action where available. No `?v=` resource
 parameter is used.
+
+## Standard / Mini layouts (2026.11.0b1 beta)
+
+The standard Lovelace card remains the default. To select Mini, edit
+this card in the visual dashboard editor and set **Kortstorlek → Mini**,
+or use:
+
+```yaml
+type: custom:woods-cortina-card
+entity: climate.wood_s_cortina_12k_duo
+name: Wood's Cortina
+size: mini
+```
+
+Mini shows the current mode/status, an unchanged contextual power button,
+and **Börvärde**, **Rum** and **Effekt** on one row. When the AC is off,
+Mini still shows its metrics; the Standard card still reduces to its
+compact OFF tile. Mini hides temperature +/- buttons, operating mode
+choices, two expanders and footer; those remain available in Standard.
+The existing safeguards for a power long-press and explicit mains-off
+confirmation are shared across both layouts. HA's one-way IR state is
+not proof of physical compressor shutdown. All previous entity overrides
+(`power_entity`, `power_sensor`, daily/monthly energy) are preserved
+when choosing a layout in the visual editor.

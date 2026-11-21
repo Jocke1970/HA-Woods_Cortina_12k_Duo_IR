@@ -1,29 +1,44 @@
-# Wood's Cortina IR — 2026.10.0b9 (final UI beta)
+# Wood's Cortina IR — 2026.11.0b1 (beta)
 
-## Final UI polish
+## New optional Mini dashboard card
 
-- Home Assistant service success acknowledgement disappears **five seconds**
-  after completion. A later command replaces the previous timer. Errors
-  remain until another action or cancellation. No extra dependencies.
-- Power button stays `mdi:power` in the top-right. The compact tile
-  shows only **AC** (or **Huvudström** when mains is off);
-  the long-press hint lives in the button's tooltip/title.
-- No duplicate blue acknowledgement when opening the mains-off
-  confirmation; the explicit confirmation strip gives the warning.
-- Advanced panel wording now acknowledges that all four HVAC modes
-  were physically tested. Auto Clean, Sleep, and timer remain unimplemented.
+A compact dashboard alternative to the existing Standard card, modelled
+after the Wecamp card's Standard/Mini size selection.
 
-## Preserved
+- Choose **Standard** (unchanged default) or **Mini** in the native
+  Lovelace visual card editor. The existing configuration can also use
+  `size: mini` in YAML.
+- Mini shows the Wood's Cortina title, a colored current mode/status,
+  the same contextual `mdi:power` control, and three compact readings:
+  **Börvärde** (or latest setpoint), **Rum**, and **Effekt (W)**.
+- Background tint follows the existing COOL/HEAT/DRY/FAN/OFF modes.
+- Mini uses a compact 3-column layout, hides advanced settings and HVAC
+  buttons, and remains compact while the AC is running. The Standard
+  layout and its existing compact OFF state remain unchanged.
+- All power actions are routed through the **same handler** as Standard.
+  A power short-tap controls smartplug ON or AC ON/OFF depending on state.
+  Holding the power icon only arms the existing guarded mains-disconnect
+  confirmation; confirmation requires low measured watts, a completed
+  60-second cooldown, and climate OFF. No additional automatic mains
+  cutoff is introduced.
+- Errors, transient HA acknowledgements, and the confirmation strip
+  remain visible in Mini when relevant. IR still provides no physical
+  feedback.
 
-- Compact OFF mode, target and room temperatures, mode colors, fan
-  speed icons, both expandable sections, confirmed mains switch-off
-  safeguards, and the local 256px HA brand icon.
-- No changes to Python IR codec or climate service dispatch.
-- The versionless resource remains
-  `/woods_cortina/woods-cortina-card.js`.
+## Testing and compatibility
 
-## Release path
+- JS tests cover layout sizes, power service routing, safe long-press,
+  missing sensors, editor changes, and preserving additional YAML config.
+- Python IR backend, state machine, sensors and native HA brand icon
+  remain unchanged from stable `2026.10.0`.
+- Stable `main` is untouched; the next release follows
+  `dev → beta → main` only after user visual approval.
 
-This beta is for final UI check before promoting a **separately versioned**
-`2026.10.0` stable release to `main`. Beta and stable tags are
-immutable. Normal SOP: dev → beta → main.
+## HACS
+
+Install prerelease `v2026.11.0b1` through HACS, restart Home Assistant
+and reload the existing Lovelace JS module:
+
+`/woods_cortina/woods-cortina-card.js`
+
+Keep the resource URL unchanged; do not add `?v=` or install from dev.
