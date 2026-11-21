@@ -70,6 +70,8 @@ const context = {
     define: (name, ctor) => registry.set(name, ctor),
   },
   window: { customCards: [] },
+  CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; this.bubbles = options.bubbles; this.composed = options.composed; } },
+  document: { createElement: (name) => new (registry.get(name))() },
   Intl, Date, Number, Math, String,
 };
 vm.runInNewContext(source, context, { filename: 'woods-cortina-card.js' });
@@ -226,7 +228,7 @@ test('responsive styles use card container size, not browser window width', () =
   assert.ok(source.includes('grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
   assert.match(source, /Senaste IR-begäran/);
-  assert.ok(source.includes('2026.10.0'));
+  assert.ok(source.includes('2026.11.0b1'));
 });
 
 
@@ -495,7 +497,7 @@ test('header contains exactly one mdi:power button in the upper right corner', (
     card._render();
     const html = card.shadowRoot.innerHTML;
     const head = html.indexOf('class="head"');
-    const headerEnd = html.indexOf('</div>\n              <div class="hero-main">', head);
+    const headerEnd = html.indexOf('class="hero-main"', head);
     const button = html.match(/<button[^>]*data-action="power"[^>]*>[\s\S]*?<\/button>/);
     assert.ok(button, 'power button is present');
     assert.equal((html.match(/data-action="power"/g) || []).length, 1);
@@ -718,4 +720,108 @@ test('advanced information correctly records hardware-tested HEAT', () => {
   const html = card.shadowRoot.innerHTML;
   assert.ok(html.includes('Kyla, värme, avfuktning och fläkt har provats på AC:n.'));
   assert.ok(!html.includes('väntar på fysisk testning'));
+});
+
+
+test('Mini and Standard use independent card layouts without changing default size', () => {
+  const { card } = createCard('heat', 23);
+  assert.equal(card._config.size, 'standard');
+  assert.ok(!card.shadowRoot.innerHTML.includes('class="mini-metrics"'));
+  assert.equal(card.getGridOptions().columns, 6);
+  card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', size: 'mini', name: 'AC Mini' });
+  const markup = card.shadowRoot.innerHTML;
+  assert.ok(markup.includes('<ha-card class="mini">'));
+  assert.ok(markup.includes('class="mini-metrics"'));
+  assert.ok(markup.includes('AC Mini'));
+  assert.ok(markup.includes('>Börvärde</span>'));
+  assert.ok(markup.includes('>23 °C</strong>'));
+  assert.ok(markup.includes('>20,5 °C</strong>'));
+  assert.ok(markup.includes('>765,4 W</strong>'));
+  assert.ok(markup.includes('mdi:power'));
+  assert.equal(card.getCardSize(), 3);
+  assert.equal(card.getGridOptions().columns, 4);
+  assert.ok(source.includes('ha-card.mini .hero-main,ha-card.mini .hero-controls,ha-card.mini .telemetry-note{display:none}'));
+  assert.ok(source.includes('ha-card.mini .off-hide{display:none}'));
+  assert.throws(() => card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', size: 'tiny' }));
+  card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo' });
+  assert.equal(card._config.size, 'standard');
+  assert.ok(!card.shadowRoot.innerHTML.includes('class="mini-metrics"'));
+});
+
+test('Mini standby retains status, temperatures and watts in its small header tile', () => {
+  const { card } = createCard('off', 22);
+  card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', size: 'mini' });
+  assert.ok(card.shadowRoot.innerHTML.includes('class="hero compact"'));
+  assert.ok(card.shadowRoot.innerHTML.includes('class="mini-metrics"'));
+  assert.ok(card.shadowRoot.innerHTML.includes('>Senaste bör</span>'));
+  assert.ok(card.shadowRoot.innerHTML.includes('>Avstängd</span>'));
+  assert.equal(card.getCardSize(), 3);
+  card._hass.states['switch.woods_cortina_silent_12k_duo'].state = 'off';
+  card._render();
+  assert.ok(card.shadowRoot.innerHTML.includes('Huvudström'));
+  assert.ok(card.shadowRoot.innerHTML.includes('Ström av'));
+});
+
+test('Mini power click preserves independent smartplug versus climate actions', async () => {
+  for (const [plug, mode, domain, action] of [
+    ['off', 'off', 'switch', 'turn_on'],
+    ['on', 'off', 'climate', 'turn_on'],
+    ['on', 'heat', 'climate', 'turn_off'],
+  ]) {
+    const { card, calls } = createCard(mode);
+    card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', size: 'mini' });
+    card._hass.states['switch.woods_cortina_silent_12k_duo'].state = plug;
+    card._render();
+    const button = card.shadowRoot.querySelectorAll('button[data-action]')
+      .find(b => b.dataset.action === 'power');
+    assert.ok(button && !button.disabled);
+    await card._handleClick(click('power'));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0][0], domain);
+    assert.equal(calls[0][1], action);
+  }
+});
+
+test('Mini power long-press still requires explicit guarded mains confirmation', async () => {
+  const { card, calls } = stoppedCard();
+  card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', size: 'mini' });
+  await card._handlePowerHold();
+  assert.equal(calls.length, 0);
+  assert.equal(card._confirmMainsOff, true);
+  assert.ok(card.shadowRoot.innerHTML.includes('class="confirm-strip"'));
+  await card._handleClick(click('mains_cancel'));
+  assert.equal(card._confirmMainsOff, false);
+  assert.equal(calls.length, 0);
+  const heating = createCard('heat');
+  heating.card.setConfig({ entity: 'climate.wood_s_cortina_12k_duo', size: 'mini' });
+  await heating.card._handlePowerHold();
+  assert.equal(heating.calls.length, 0);
+  assert.equal(heating.card._confirmMainsOff, false);
+});
+
+test('Mini dashboard editor switches size and keeps existing entity settings intact', () => {
+  const editor = Card.getConfigElement();
+  assert.ok(editor);
+  assert.ok(editor.shadowRoot);
+  editor.setConfig({
+    entity: 'climate.wood_s_cortina_12k_duo',
+    name: 'Cortina',
+    power_entity: 'switch.other_plug',
+    size: 'standard',
+  });
+  assert.ok(editor.shadowRoot.innerHTML.includes('Kortstorlek'));
+  assert.ok(editor.shadowRoot.innerHTML.includes('>Mini</option>'));
+  const events = [];
+  editor.dispatchEvent = ev => events.push(ev);
+  editor._change('size', 'mini');
+  assert.equal(events.length, 1);
+  assert.equal(events[0].type, 'config-changed');
+  assert.equal(events[0].detail.config.size, 'mini');
+  assert.equal(events[0].detail.config.power_entity, 'switch.other_plug');
+  editor._change('size', 'standard');
+  assert.equal(events[1].detail.config.size, undefined);
+  editor._change('entity', 'sensor.invalid');
+  assert.equal(events.length, 2);
+  editor._change('name', 'Ny rubrik');
+  assert.equal(events[2].detail.config.name, 'Ny rubrik');
 });

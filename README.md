@@ -119,3 +119,16 @@ disappear after five seconds, but errors remain.
 state, not a verified compressor status. Check the real AC before any
 mains disconnection. Avoid unattended frost protection or heating control
 without independently validated feedback and shutdown safeguards.
+
+## Mini dashboard layout — 2026.11.0b1 beta
+
+The bundled Lovelace card now has two sizes: **Standard** (default) and
+**Mini**, chosen in the card's visual editor or via `size: mini` in YAML.
+Mini shows the mode/status, the same guarded power button, latest target,
+room temperature and current measured power. It does not expose the
+larger climate mode and temperature controls; switch back to Standard
+for full control. Both layouts share the verified IR and smartplug service
+logic. See [docs/UI.md](docs/UI.md) for the exact configuration.
+
+Stable `2026.10.0` remains on `main`. This Mini layout first appears
+in `2026.11.0b1` beta; do not install `dev` directly.

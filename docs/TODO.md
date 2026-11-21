@@ -104,3 +104,13 @@ hypotheses.
 
 - [x] b9 UI: transient five-second HA success notices, preserved error display, accurate HEAT copy, shorter visible power label.
 - [ ] Stable release `2026.10.0`: CI on all branches, main GitHub release and unchanged versionless resource URL.
+
+## November 2026 — Mini card beta
+
+- [x] Introduce `size: mini` alongside unchanged Standard default.
+- [x] Add native Lovelace Standard/Mini editor selector.
+- [x] Mini: status, target, room temperature, instantaneous power, and
+  the same guarded contextual power button and explicit mains-off dialog.
+- [ ] Complete GitHub CI and publish HACS `2026.11.0b1` beta.
+- [ ] Validate the Mini layout and long-press confirmation on a real HA
+  dashboard at narrow and wide widths before any `main` promotion.
