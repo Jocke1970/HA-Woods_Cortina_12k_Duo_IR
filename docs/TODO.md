@@ -114,3 +114,9 @@ hypotheses.
 - [ ] Complete GitHub CI and publish HACS `2026.11.0b1` beta.
 - [ ] Validate the Mini layout and long-press confirmation on a real HA
   dashboard at narrow and wide widths before any `main` promotion.
+
+- [x] b2 UI correction: Standard/ Mini recommended Section widths
+  12/6 instead of 6/4; auto row height and Mini wrap at ≤260px.
+- [ ] Check already-added Standard/Mini cards in HA Layout editor;
+  reset Use recommended size if `grid_options` was saved.
+- [ ] Real visual acceptance of `2026.11.0b2` before stable promotion.

@@ -132,3 +132,15 @@ logic. See [docs/UI.md](docs/UI.md) for the exact configuration.
 
 Stable `2026.10.0` remains on `main`. This Mini layout first appears
 in `2026.11.0b1` beta; do not install `dev` directly.
+
+### Section layout defaults in 2026.11.0b2
+
+Fixed an overly narrow Section layout recommendation in the first Mini
+beta. Standard now defaults to the **full 12-column section**; Mini
+uses **6 columns**. Both use automatic height and can still be resized
+in the dashboard editor. Mini wraps its power measurement beneath the
+two temperature readings at narrow widths to prevent clipping.
+
+If an existing dashboard card has a saved `grid_options` override,
+re-enable **Layout → Use recommended size** to pick up the new sizes.
+Otherwise select 12 columns for Standard or 6 for Mini manually.
